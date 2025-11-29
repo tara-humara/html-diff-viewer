@@ -1,0 +1,98 @@
+/* Container */
+
+.diff-container {
+    font-family: Menlo, Monaco, "Courier New", monospace;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fafafa;
+    overflow-x: auto;
+}
+
+/* Generic row layout */
+
+.diff-row {
+    display: flex;
+    white-space: pre-wrap;
+    border-bottom: 1px solid #eee;
+}
+
+/* Change bar */
+
+.diff-bar {
+    width: 4px;
+}
+
+.diff-bar--added {
+    background-color: #22c55e;
+}
+
+.diff-bar--removed {
+    background-color: #ef4444;
+}
+
+.diff-bar--mixed {
+    background-color: #3b82f6;
+}
+
+.diff-bar--unchanged {
+    background-color: transparent;
+}
+
+/* Line number column */
+
+.diff-line-number {
+    width: 40px;
+    text-align: right;
+    padding: 4px 8px;
+    color: #6b7280;
+    background: #f1f5f9;
+    border-right: 1px solid #ddd;
+    user-select: none;
+}
+
+/* Line content */
+
+.diff-line-content {
+    padding: 4px 12px;
+    flex: 1;
+    white-space: pre-wrap;
+}
+
+/* Backgrounds by line kind */
+
+.diff-row--added .diff-line-content {
+    background-color: rgba(34, 197, 94, 0.15);
+}
+
+.diff-row--removed .diff-line-content {
+    background-color: rgba(239, 68, 68, 0.15);
+}
+
+.diff-row--mixed .diff-line-content {
+    background-color: rgba(59, 130, 246, 0.12);
+}
+
+.diff-row--unchanged .diff-line-content {
+    background-color: transparent;
+}
+
+.diff-row--removed .diff-line-content {
+    text-decoration: line-through;
+}
+
+/* Skipped (collapsed) rows */
+
+.diff-row--skipped {
+    font-style: italic;
+    color: #6b7280;
+    background: #f9fafb;
+}
+
+.diff-row--skipped .diff-line-number {
+    background: #f1f5f9;
+}
+
+.diff-line-content--skipped {
+    padding: 4px 12px;
+}

@@ -1,6 +1,7 @@
 // src/components/TextDiff.tsx
 import React from "react";
 import { diffWords, diffChars, diffLines } from "diff";
+import "../styles/diff.css";
 
 export type DiffMode = "words" | "chars" | "lines";
 
@@ -78,6 +79,8 @@ const renderLineWithHighlights = (line: string, parts: DiffPart[]): string => {
     return html;
 };
 
+type LineKind = "added" | "removed" | "mixed" | "unchanged";
+
 /**
  * Stateless component that displays a diff between two raw HTML strings.
  * Granularity can be characters, words, or lines.
@@ -106,70 +109,27 @@ export const TextDiff: React.FC<TextDiffProps> = ({
         });
 
         return (
-            <div
-                style={{
-                    fontFamily: "Menlo, Monaco, 'Courier New', monospace",
-                    fontSize: "14px",
-                    border: "1px solid #ddd",
-                    borderRadius: "4px",
-                    background: "#fafafa",
-                    overflowX: "auto",
-                }}
-            >
-                {lineRows.map((row, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            display: "flex",
-                            whiteSpace: "pre-wrap",
-                            borderBottom: "1px solid #eee",
-                        }}
-                    >
-                        {/* Change bar */}
-                        <div
-                            style={{
-                                width: "4px",
-                                backgroundColor: row.added
-                                    ? "#22c55e"
-                                    : row.removed
-                                        ? "#ef4444"
-                                        : "transparent",
-                            }}
-                        />
+            <div className="diff-container">
+                {lineRows.map((row, i) => {
+                    const kind: LineKind = row.added
+                        ? "added"
+                        : row.removed
+                            ? "removed"
+                            : "unchanged";
 
-                        {/* Line number */}
-                        <div
-                            style={{
-                                width: "40px",
-                                textAlign: "right",
-                                padding: "4px 8px",
-                                color: "#6b7280",
-                                background: "#f1f5f9",
-                                borderRight: "1px solid #ddd",
-                                userSelect: "none",
-                            }}
-                        >
-                            {i + 1}
-                        </div>
+                    const rowClass = `diff-row diff-row--${kind}`;
+                    const barClass = `diff-bar diff-bar--${kind}`;
 
-                        {/* Line content */}
-                        <div
-                            style={{
-                                padding: "4px 12px",
-                                flex: 1,
-                                whiteSpace: "pre-wrap",
-                                backgroundColor: row.added
-                                    ? "rgba(34,197,94,0.15)"
-                                    : row.removed
-                                        ? "rgba(239,68,68,0.15)"
-                                        : "transparent",
-                                textDecoration: row.removed ? "line-through" : "none",
-                            }}
-                        >
-                            {row.line === "" ? "\u00A0" : row.line}
+                    return (
+                        <div key={i} className={rowClass}>
+                            <div className={barClass} />
+                            <div className="diff-line-number">{i + 1}</div>
+                            <div className="diff-line-content">
+                                {row.line === "" ? "\u00A0" : row.line}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         );
     }
@@ -179,8 +139,6 @@ export const TextDiff: React.FC<TextDiffProps> = ({
     // Recreate full diff text so we can split by line
     const diffText = parts.map((p) => p.value).join("");
     const diffLines = diffText.split("\n");
-
-    type LineKind = "added" | "removed" | "mixed" | "unchanged";
 
     const classifyLine = (line: string): LineKind => {
         const trimmed = line.trim();
@@ -273,16 +231,7 @@ export const TextDiff: React.FC<TextDiffProps> = ({
     }
 
     return (
-        <div
-            style={{
-                fontFamily: "Menlo, Monaco, 'Courier New', monospace",
-                fontSize: "14px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                background: "#fafafa",
-                overflowX: "auto",
-            }}
-        >
+        <div className="diff-container">
             {rows.map((row, idx) => {
                 if (row.kind === "skipped") {
                     const hiddenCount = row.endIndex - row.startIndex + 1;
@@ -291,39 +240,11 @@ export const TextDiff: React.FC<TextDiffProps> = ({
                     return (
                         <div
                             key={`skipped-${idx}`}
-                            style={{
-                                display: "flex",
-                                borderBottom: "1px solid #eee",
-                                fontStyle: "italic",
-                                color: "#6b7280",
-                                background: "#f9fafb",
-                            }}
+                            className="diff-row diff-row--skipped"
                         >
-                            {/* Bar */}
-                            <div
-                                style={{
-                                    width: "4px",
-                                    backgroundColor: "transparent",
-                                }}
-                            />
-                            {/* Line number cell (blank) */}
-                            <div
-                                style={{
-                                    width: "40px",
-                                    textAlign: "right",
-                                    padding: "4px 8px",
-                                    background: "#f1f5f9",
-                                    borderRight: "1px solid #ddd",
-                                    userSelect: "none",
-                                }}
-                            />
-                            {/* Message */}
-                            <div
-                                style={{
-                                    padding: "4px 12px",
-                                    flex: 1,
-                                }}
-                            >
+                            <div className="diff-bar diff-bar--unchanged" />
+                            <div className="diff-line-number" />
+                            <div className="diff-line-content diff-line-content--skipped">
                                 … {hiddenCount} unchanged line
                                 {hiddenCount > 1 ? "s" : ""} …
                             </div>
@@ -331,67 +252,17 @@ export const TextDiff: React.FC<TextDiffProps> = ({
                     );
                 }
 
-                // context row (actual line)
                 const { line, lineIndex, meta } = row;
 
-                const barColor =
-                    meta === "added"
-                        ? "#22c55e"
-                        : meta === "removed"
-                            ? "#ef4444"
-                            : meta === "mixed"
-                                ? "#3b82f6"
-                                : "transparent";
-
-                const lineBg =
-                    meta === "added"
-                        ? "rgba(34,197,94,0.15)"
-                        : meta === "removed"
-                            ? "rgba(239,68,68,0.15)"
-                            : meta === "mixed"
-                                ? "rgba(59,130,246,0.12)"
-                                : "transparent";
+                const rowClass = `diff-row diff-row--${meta}`;
+                const barClass = `diff-bar diff-bar--${meta}`;
 
                 return (
-                    <div
-                        key={`line-${idx}-${lineIndex}`}
-                        style={{
-                            display: "flex",
-                            whiteSpace: "pre-wrap",
-                            borderBottom: "1px solid #eee",
-                        }}
-                    >
-                        {/* Change bar */}
+                    <div key={`line-${idx}-${lineIndex}`} className={rowClass}>
+                        <div className={barClass} />
+                        <div className="diff-line-number">{lineIndex + 1}</div>
                         <div
-                            style={{
-                                width: "4px",
-                                backgroundColor: barColor,
-                            }}
-                        />
-
-                        {/* Line number */}
-                        <div
-                            style={{
-                                width: "40px",
-                                textAlign: "right",
-                                padding: "4px 8px",
-                                color: "#6b7280",
-                                background: "#f1f5f9",
-                                borderRight: "1px solid #ddd",
-                                userSelect: "none",
-                            }}
-                        >
-                            {lineIndex + 1}
-                        </div>
-
-                        {/* Line content with inline highlights */}
-                        <div
-                            style={{
-                                padding: "4px 12px",
-                                flex: 1,
-                                whiteSpace: "pre-wrap",
-                                backgroundColor: lineBg,
-                            }}
+                            className="diff-line-content"
                             dangerouslySetInnerHTML={{
                                 __html: renderLineWithHighlights(line, parts),
                             }}
