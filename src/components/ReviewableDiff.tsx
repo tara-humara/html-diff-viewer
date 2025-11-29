@@ -17,12 +17,19 @@ const ChangeInline: React.FC<{
     onDecision: (value: boolean) => void;
 }> = ({ change, decision, onDecision }) => {
     const bubbleKindClass = `change-inline__bubble change-inline__bubble--${change.type}`;
+    const containerClass =
+        "change-inline" +
+        (decision === true
+            ? " change-inline--accepted"
+            : decision === false
+                ? " change-inline--rejected"
+                : "");
 
     const acceptActive = decision === true;
     const rejectActive = decision === false;
 
     return (
-        <span className="change-inline">
+        <span className={containerClass}>
             <span className={bubbleKindClass}>
                 {change.type !== "add" && change.original && (
                     <span className="change-inline__original">{change.original}</span>
@@ -74,6 +81,30 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
 
     const [decisions, setDecisions] = useState<Decisions>({});
 
+    // List of all changes (for stats + bulk actions)
+    const changes: Change[] = useMemo(
+        () =>
+            blocks
+                .filter((b) => b.kind === "change")
+                .map((b) => (b as { kind: "change"; change: Change }).change),
+        [blocks]
+    );
+
+    const stats = useMemo(() => {
+        const total = changes.length;
+        let accepted = 0;
+        let rejected = 0;
+
+        for (const change of changes) {
+            const d = decisions[change.id];
+            if (d === true) accepted++;
+            else if (d === false) rejected++;
+        }
+
+        const pending = total - accepted - rejected;
+        return { total, accepted, rejected, pending };
+    }, [changes, decisions]);
+
     const mergedText = useMemo(
         () => buildMergedText(blocks, decisions),
         [blocks, decisions]
@@ -83,11 +114,58 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
         setDecisions((prev) => ({ ...prev, [id]: value }));
     };
 
+    const handleBulk = (value: boolean) => {
+        setDecisions((prev) => {
+            const next: Decisions = { ...prev };
+            for (const change of changes) {
+                next[change.id] = value;
+            }
+            return next;
+        });
+    };
+
     return (
         <div className="review-layout">
             {/* Left: review changes */}
             <div className="review-panel">
-                <div className="review-panel__title">Review suggestions</div>
+                <div className="review-panel__header">
+                    <div>
+                        <div className="review-panel__title">Review suggestions</div>
+                        <div className="review-stats">
+                            <span className="review-stats__pill">
+                                Total: {stats.total}
+                            </span>
+                            <span className="review-stats__pill review-stats__pill--accepted">
+                                Accepted: {stats.accepted}
+                            </span>
+                            <span className="review-stats__pill review-stats__pill--rejected">
+                                Rejected: {stats.rejected}
+                            </span>
+                            <span className="review-stats__pill review-stats__pill--pending">
+                                Pending: {stats.pending}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="review-bulk-actions">
+                        <button
+                            type="button"
+                            className="review-bulk-btn review-bulk-btn--accept"
+                            onClick={() => handleBulk(true)}
+                            disabled={changes.length === 0}
+                        >
+                            Accept all
+                        </button>
+                        <button
+                            type="button"
+                            className="review-bulk-btn review-bulk-btn--reject"
+                            onClick={() => handleBulk(false)}
+                            disabled={changes.length === 0}
+                        >
+                            Reject all
+                        </button>
+                    </div>
+                </div>
+
                 <div className="review-panel__body">
                     {blocks.map((block, idx) => {
                         if (block.kind === "text") {
