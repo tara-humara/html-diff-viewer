@@ -299,3 +299,48 @@
 .review-banner__icon {
     font-size: 14px;
 }
+
+/* ---- Animations for Level 2 review mode ---- */
+
+/* Smooth transitions for bubbles and buttons */
+.change-inline,
+.change-inline__bubble,
+.change-btn {
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.15s ease;
+}
+
+/* Pulse when accepting/rejecting a change */
+.change-inline--accepted {
+    animation: diff-accept-pulse 0.25s ease-out;
+}
+
+.change-inline--rejected {
+    animation: diff-reject-pulse 0.25s ease-out;
+}
+
+/* Green ripple */
+@keyframes diff-accept-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    }
+
+    100% {
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
+}
+
+/* Red ripple */
+@keyframes diff-reject-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+
+    100% {
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+}
