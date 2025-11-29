@@ -45,3 +45,38 @@
     padding: 0 2px;
     text-decoration: line-through;
 }
+
+/* ---- Side-by-side preview ---- */
+
+.wysiwyg-compare-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.wysiwyg-pane {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.wysiwyg-pane-title {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 4px;
+}
+
+.wysiwyg-pane-content {
+    padding: 4px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.wysiwyg-pane-content ul,
+.wysiwyg-pane-content ol {
+    padding-left: 1.25rem;
+}

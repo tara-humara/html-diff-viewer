@@ -5,9 +5,15 @@ import type { DiffMode } from "./components/TextDiff";
 import { SideBySideDiff } from "./components/SideBySideDiff";
 import { ReviewableDiff } from "./components/ReviewableDiff";
 import { WysiwygDiff } from "./wysiwyg/WysiwygDiff";
+import { HtmlSideBySide } from "./wysiwyg/HtmlSideBySide";
 import { examples } from "./examples";
 
-type ViewMode = "unified" | "side-by-side" | "review" | "wysiwyg";
+type ViewMode =
+  | "unified"
+  | "side-by-side"
+  | "review"
+  | "wysiwyg"
+  | "html-preview";
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<DiffMode>("words");
@@ -85,6 +91,7 @@ const App: React.FC = () => {
             <option value="side-by-side">Side by side</option>
             <option value="review">Review (accept/reject)</option>
             <option value="wysiwyg">WYSIWYG HTML diff</option>
+            <option value="html-preview">HTML preview (side-by-side)</option>
           </select>
         </label>
 
@@ -144,7 +151,7 @@ const App: React.FC = () => {
         )}
       </section>
 
-      {/* Diff output section */}
+      {/* Diff / preview output section */}
       <section style={{ maxWidth: "1100px" }}>
         {viewMode === "unified" && (
           <TextDiff
@@ -170,6 +177,13 @@ const App: React.FC = () => {
 
         {viewMode === "wysiwyg" && (
           <WysiwygDiff
+            original={selectedExample.original}
+            modified={selectedExample.modified}
+          />
+        )}
+
+        {viewMode === "html-preview" && (
+          <HtmlSideBySide
             original={selectedExample.original}
             modified={selectedExample.modified}
           />
