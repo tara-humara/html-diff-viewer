@@ -101,29 +101,24 @@ export const SideBySideDiff: React.FC<SideBySideDiffProps> = ({
 
             {/* Rows */}
             {rows.map((row, idx) => {
-                const leftBg =
-                    row.type === "removed"
-                        ? "rgba(239,68,68,0.15)"
-                        : row.type === "unchanged"
-                            ? "transparent"
-                            : "transparent";
-                const rightBg =
-                    row.type === "added"
-                        ? "rgba(34,197,94,0.15)"
-                        : row.type === "unchanged"
-                            ? "transparent"
-                            : "transparent";
+                const leftBar =
+                    row.type === "removed" ? "#ef4444" : "transparent";
+                const rightBar =
+                    row.type === "added" ? "#22c55e" : "transparent";
 
                 return (
                     <div
                         key={idx}
                         style={{
                             display: "grid",
-                            gridTemplateColumns: "60px 1fr 60px 1fr",
+                            gridTemplateColumns: "4px 60px 1fr 4px 60px 1fr",
                             borderBottom: "1px solid #eee",
                             whiteSpace: "pre-wrap",
                         }}
                     >
+                        {/* Left bar */}
+                        <div style={{ backgroundColor: leftBar }} />
+
                         {/* Left line number */}
                         <div
                             style={{
@@ -142,12 +137,18 @@ export const SideBySideDiff: React.FC<SideBySideDiffProps> = ({
                         <div
                             style={{
                                 padding: "2px 8px",
-                                backgroundColor: leftBg,
+                                backgroundColor:
+                                    row.type === "removed"
+                                        ? "rgba(239,68,68,0.15)"
+                                        : "transparent",
                                 textDecoration: row.type === "removed" ? "line-through" : "none",
                             }}
                         >
                             {row.left === "" ? "\u00A0" : row.left}
                         </div>
+
+                        {/* Right bar */}
+                        <div style={{ backgroundColor: rightBar }} />
 
                         {/* Right line number */}
                         <div
@@ -168,7 +169,10 @@ export const SideBySideDiff: React.FC<SideBySideDiffProps> = ({
                         <div
                             style={{
                                 padding: "2px 8px",
-                                backgroundColor: rightBg,
+                                backgroundColor:
+                                    row.type === "added"
+                                        ? "rgba(34,197,94,0.15)"
+                                        : "transparent",
                             }}
                         >
                             {row.right === "" ? "\u00A0" : row.right}

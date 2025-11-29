@@ -176,43 +176,76 @@ export const TextDiff: React.FC<TextDiffProps> = ({
                 overflowX: "auto",
             }}
         >
-            {diffLines.map((line, i) => (
-                <div
-                    key={i}
-                    style={{
-                        display: "flex",
-                        whiteSpace: "pre-wrap",
-                        borderBottom: "1px solid #eee",
-                    }}
-                >
-                    {/* Line number */}
+            {diffLines.map((line, i) => {
+                // Determine if the entire line contains added or removed parts
+                const isAdded = parts.some(
+                    (p) => p.added && line.includes(p.value.trim())
+                );
+                const isRemoved = parts.some(
+                    (p) => p.removed && line.includes(p.value.trim())
+                );
+
+                const lineColor =
+                    isAdded && !isRemoved
+                        ? "rgba(34, 197, 94, 0.15)"
+                        : isRemoved && !isAdded
+                            ? "rgba(239, 68, 68, 0.15)"
+                            : "transparent";
+
+                const barColor =
+                    isAdded && !isRemoved
+                        ? "#22c55e"
+                        : isRemoved && !isAdded
+                            ? "#ef4444"
+                            : "transparent";
+
+                return (
                     <div
+                        key={i}
                         style={{
-                            width: "40px",
-                            textAlign: "right",
-                            padding: "4px 8px",
-                            color: "#6b7280",
-                            background: "#f1f5f9",
-                            borderRight: "1px solid #ddd",
-                            userSelect: "none",
+                            display: "flex",
+                            whiteSpace: "pre-wrap",
+                            borderBottom: "1px solid #eee",
                         }}
                     >
-                        {i + 1}
-                    </div>
+                        {/* Change bar */}
+                        <div
+                            style={{
+                                width: "4px",
+                                backgroundColor: barColor,
+                            }}
+                        />
 
-                    {/* Line content with inline highlights */}
-                    <div
-                        style={{
-                            padding: "4px 12px",
-                            flex: 1,
-                            whiteSpace: "pre-wrap",
-                        }}
-                        dangerouslySetInnerHTML={{
-                            __html: renderLineWithHighlights(line, parts),
-                        }}
-                    />
-                </div>
-            ))}
+                        {/* Line number */}
+                        <div
+                            style={{
+                                width: "40px",
+                                textAlign: "right",
+                                padding: "4px 8px",
+                                color: "#6b7280",
+                                background: "#f1f5f9",
+                                borderRight: "1px solid #ddd",
+                                userSelect: "none",
+                            }}
+                        >
+                            {i + 1}
+                        </div>
+
+                        {/* Line content */}
+                        <div
+                            style={{
+                                padding: "4px 12px",
+                                flex: 1,
+                                whiteSpace: "pre-wrap",
+                                backgroundColor: lineColor,
+                            }}
+                            dangerouslySetInnerHTML={{
+                                __html: renderLineWithHighlights(line, parts),
+                            }}
+                        />
+                    </div>
+                );
+            })}
         </div>
     );
 };
