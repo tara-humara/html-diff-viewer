@@ -36,9 +36,51 @@ const getDiffParts = (
     }
 };
 
+/** Escape HTML before inserting via innerHTML */
+const escapeHtml = (value: string) =>
+    value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+/**
+ * Converts diff parts into highlighted HTML for a single line.
+ * Used for chars/words modes.
+ */
+const renderLineWithHighlights = (line: string, parts: DiffPart[]): string => {
+    let html = "";
+    let cursor = 0;
+
+    for (const part of parts) {
+        const idx = line.indexOf(part.value, cursor);
+
+        if (idx === -1) continue;
+
+        const before = line.slice(cursor, idx);
+        html += escapeHtml(before);
+
+        const escapedValue = escapeHtml(part.value);
+
+        if (part.added) {
+            html += `<span style="background: rgba(34,197,94,0.2);">${escapedValue}</span>`;
+        } else if (part.removed) {
+            html += `<span style="background: rgba(239,68,68,0.2); text-decoration: line-through;">${escapedValue}</span>`;
+        } else {
+            html += escapedValue;
+        }
+
+        cursor = idx + part.value.length;
+    }
+
+    // Remaining unmatched text
+    html += escapeHtml(line.slice(cursor));
+
+    return html;
+};
+
 /**
  * Stateless component that displays a diff between two raw HTML strings.
- * Granularity can be characters, words or lines.
+ * Granularity can be characters, words, or lines.
  */
 export const TextDiff: React.FC<TextDiffProps> = ({
     original,
@@ -47,6 +89,82 @@ export const TextDiff: React.FC<TextDiffProps> = ({
 }) => {
     const parts = getDiffParts(original, modified, mode);
 
+    // Special handling for pure line-level diff
+    if (mode === "lines") {
+        // Flatten parts into individual lines with their added/removed flags
+        const lineRows: { line: string; added?: boolean; removed?: boolean }[] = [];
+
+        parts.forEach((part) => {
+            const lines = part.value.split("\n");
+
+            lines.forEach((line, idx) => {
+                // Skip trailing empty line caused by final '\n'
+                if (idx === lines.length - 1 && line === "") return;
+                lineRows.push({ line, added: part.added, removed: part.removed });
+            });
+        });
+
+        return (
+            <div
+                style={{
+                    fontFamily: "Menlo, Monaco, 'Courier New', monospace",
+                    fontSize: "14px",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                    background: "#fafafa",
+                    overflowX: "auto",
+                }}
+            >
+                {lineRows.map((row, i) => (
+                    <div
+                        key={i}
+                        style={{
+                            display: "flex",
+                            whiteSpace: "pre-wrap",
+                            borderBottom: "1px solid #eee",
+                        }}
+                    >
+                        {/* Line number */}
+                        <div
+                            style={{
+                                width: "40px",
+                                textAlign: "right",
+                                padding: "4px 8px",
+                                color: "#6b7280",
+                                background: "#f1f5f9",
+                                borderRight: "1px solid #ddd",
+                                userSelect: "none",
+                            }}
+                        >
+                            {i + 1}
+                        </div>
+
+                        {/* Line content */}
+                        <div
+                            style={{
+                                padding: "4px 12px",
+                                flex: 1,
+                                whiteSpace: "pre-wrap",
+                                backgroundColor: row.added
+                                    ? "rgba(34,197,94,0.15)"
+                                    : row.removed
+                                        ? "rgba(239,68,68,0.15)"
+                                        : "transparent",
+                                textDecoration: row.removed ? "line-through" : "none",
+                            }}
+                        >
+                            {row.line === "" ? "\u00A0" : row.line}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    // Default: chars / words rendering with inline highlights
+    const diffText = parts.map((p) => p.value).join("");
+    const diffLines = diffText.split("\n");
+
     return (
         <div
             style={{
@@ -54,49 +172,47 @@ export const TextDiff: React.FC<TextDiffProps> = ({
                 fontSize: "14px",
                 border: "1px solid #ddd",
                 borderRadius: "4px",
-                padding: "12px",
                 background: "#fafafa",
-                whiteSpace: "pre-wrap",
-                lineHeight: 1.5,
+                overflowX: "auto",
             }}
         >
-            {parts.map((part, index) => {
-                const baseStyle: React.CSSProperties = {
-                    padding: part.added || part.removed ? "0 1px" : undefined,
-                };
+            {diffLines.map((line, i) => (
+                <div
+                    key={i}
+                    style={{
+                        display: "flex",
+                        whiteSpace: "pre-wrap",
+                        borderBottom: "1px solid #eee",
+                    }}
+                >
+                    {/* Line number */}
+                    <div
+                        style={{
+                            width: "40px",
+                            textAlign: "right",
+                            padding: "4px 8px",
+                            color: "#6b7280",
+                            background: "#f1f5f9",
+                            borderRight: "1px solid #ddd",
+                            userSelect: "none",
+                        }}
+                    >
+                        {i + 1}
+                    </div>
 
-                if (part.added) {
-                    return (
-                        <span
-                            key={index}
-                            style={{
-                                ...baseStyle,
-                                backgroundColor: "rgba(34, 197, 94, 0.2)", // Added
-                            }}
-                        >
-                            {part.value}
-                        </span>
-                    );
-                }
-
-                if (part.removed) {
-                    return (
-                        <span
-                            key={index}
-                            style={{
-                                ...baseStyle,
-                                backgroundColor: "rgba(239, 68, 68, 0.2)", // Removed
-                                textDecoration: "line-through",
-                            }}
-                        >
-                            {part.value}
-                        </span>
-                    );
-                }
-
-                // Unchanged
-                return <span key={index}>{part.value}</span>;
-            })}
+                    {/* Line content with inline highlights */}
+                    <div
+                        style={{
+                            padding: "4px 12px",
+                            flex: 1,
+                            whiteSpace: "pre-wrap",
+                        }}
+                        dangerouslySetInnerHTML={{
+                            __html: renderLineWithHighlights(line, parts),
+                        }}
+                    />
+                </div>
+            ))}
         </div>
     );
 };
