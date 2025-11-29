@@ -9,6 +9,11 @@
     padding: 12px 16px;
 }
 
+.wysiwyg-container p,
+.wysiwyg-container h2 {
+    margin: 0 0 8px 0;
+}
+
 .wysiwyg-container ul,
 .wysiwyg-container ol {
     padding-left: 1.5rem;

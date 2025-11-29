@@ -8,13 +8,26 @@ export type InlinePart = {
 
 export type LiStatus = "unchanged" | "added" | "removed" | "changed";
 
+export type BlockTag = "p" | "h2";
+
 export type WysiwygNode =
+    | {
+        type: "root";
+        children: WysiwygNode[];
+    }
     | {
         type: "ul" | "ol";
         children: WysiwygNode[];
     }
     | {
         type: "li";
+        id: string;
+        status: LiStatus;
+        inlineParts: InlinePart[];
+    }
+    | {
+        type: "block";
+        tag: BlockTag;
         id: string;
         status: LiStatus;
         inlineParts: InlinePart[];
