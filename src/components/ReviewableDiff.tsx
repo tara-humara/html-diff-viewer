@@ -31,7 +31,7 @@ const ChangeInline: React.FC<{
     return (
         <span className={containerClass}>
             <span className={bubbleKindClass}>
-                {/* visible bubble */}
+                {/* visible bubble content */}
                 {change.type !== "add" && change.original && (
                     <span className="change-inline__original">{change.original}</span>
                 )}
@@ -41,10 +41,14 @@ const ChangeInline: React.FC<{
                 {change.type !== "remove" && change.modified && (
                     <span className="change-inline__modified">{change.modified}</span>
                 )}
+                {change.type === "remove" && !change.original && (
+                    <span className="change-inline__modified">(remove)</span>
+                )}
 
                 {/* tooltip */}
                 <span className="change-tooltip">
-                    {change.type === "replace" && `Replace:\n- ${change.original}\n+ ${change.modified}`}
+                    {change.type === "replace" &&
+                        `Replace:\n- ${change.original}\n+ ${change.modified}`}
                     {change.type === "add" && `Add:\n+ ${change.modified}`}
                     {change.type === "remove" && `Remove:\n- ${change.original}`}
                 </span>
@@ -110,6 +114,8 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
         return { total, accepted, rejected, pending };
     }, [changes, decisions]);
 
+    const reviewComplete = stats.total > 0 && stats.pending === 0;
+
     const mergedText = useMemo(
         () => buildMergedText(blocks, decisions),
         [blocks, decisions]
@@ -127,6 +133,10 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
             }
             return next;
         });
+    };
+
+    const handleResetAll = () => {
+        setDecisions({});
     };
 
     return (
@@ -168,8 +178,23 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                         >
                             Reject all
                         </button>
+                        <button
+                            type="button"
+                            className="review-bulk-btn review-bulk-btn--reset"
+                            onClick={handleResetAll}
+                            disabled={changes.length === 0 && Object.keys(decisions).length === 0}
+                        >
+                            Reset
+                        </button>
                     </div>
                 </div>
+
+                {reviewComplete && (
+                    <div className="review-banner review-banner--success">
+                        <span className="review-banner__icon">✅</span>
+                        <span>Review complete: all changes have been accepted or rejected.</span>
+                    </div>
+                )}
 
                 <div className="review-panel__body">
                     {blocks.map((block, idx) => {
@@ -194,7 +219,9 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
 
             {/* Right: final merged text */}
             <div className="review-panel">
-                <div className="review-panel__title">Final result (after decisions)</div>
+                <div className="review-panel__title">
+                    Final result (after decisions)
+                </div>
                 <textarea className="review-final-text" value={mergedText} readOnly />
             </div>
         </div>

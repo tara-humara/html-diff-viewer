@@ -270,3 +270,32 @@
     border-radius: 4px;
     padding: 2px 3px;
 }
+
+/* ----------  BULK RESET BUTTON  ---------- */
+
+.review-bulk-btn--reset {
+    border-color: #9ca3af;
+    color: #374151;
+}
+
+/* ----------  REVIEW COMPLETE BANNER  ---------- */
+
+.review-banner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.review-banner--success {
+    background: #ecfdf3;
+    border: 1px solid #16a34a;
+    color: #166534;
+}
+
+.review-banner__icon {
+    font-size: 14px;
+}
