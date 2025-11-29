@@ -15,6 +15,7 @@ export type WysiwygNode =
     }
     | {
         type: "li";
+        id: string;
         status: LiStatus;
         inlineParts: InlinePart[];
     };

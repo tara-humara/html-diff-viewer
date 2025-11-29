@@ -39,33 +39,28 @@ function diffList(a: WysiwygNode, b: WysiwygNode): WysiwygNode {
     for (let i = 0; i < maxLen; i++) {
         const aNode = a.children[i];
         const bNode = b.children[i];
+        const id = `li-${i}`;
 
         // Added line
         if (!aNode && bNode && isLiNode(bNode)) {
+            const text = bNode.inlineParts.map((p) => p.value).join("");
             children.push({
                 type: "li",
+                id,
                 status: "added",
-                inlineParts: [
-                    {
-                        value: bNode.inlineParts.map((p) => p.value).join(""),
-                        added: true,
-                    },
-                ],
+                inlineParts: [{ value: text, added: true }],
             });
             continue;
         }
 
         // Removed line
         if (aNode && !bNode && isLiNode(aNode)) {
+            const text = aNode.inlineParts.map((p) => p.value).join("");
             children.push({
                 type: "li",
+                id,
                 status: "removed",
-                inlineParts: [
-                    {
-                        value: aNode.inlineParts.map((p) => p.value).join(""),
-                        removed: true,
-                    },
-                ],
+                inlineParts: [{ value: text, removed: true }],
             });
             continue;
         }
@@ -81,6 +76,7 @@ function diffList(a: WysiwygNode, b: WysiwygNode): WysiwygNode {
 
             children.push({
                 type: "li",
+                id,
                 status,
                 inlineParts: parts,
             });

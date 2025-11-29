@@ -21,10 +21,11 @@ function parseListNode(el: HTMLUListElement | HTMLOListElement): WysiwygNode {
     const children: WysiwygNode[] = [];
 
     const liElements = el.querySelectorAll(":scope > li");
-    liElements.forEach((li) => {
+    liElements.forEach((li, index) => {
         const text = li.textContent ?? "";
         children.push({
             type: "li",
+            id: `li-${index}`,
             status: "unchanged",
             inlineParts: [{ value: text }],
         });

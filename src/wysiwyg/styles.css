@@ -80,3 +80,70 @@
 .wysiwyg-pane-content ol {
     padding-left: 1.25rem;
 }
+
+/* Container already exists; we extend behaviour */
+
+.wysiwyg-container ul,
+.wysiwyg-container ol {
+    padding-left: 1.5rem;
+}
+
+/* Existing li status classes remain; we add decision-based ones */
+
+.li-accepted {
+    box-shadow: inset 2px 0 0 #16a34a;
+}
+
+.li-rejected {
+    box-shadow: inset 2px 0 0 #dc2626;
+    opacity: 0.85;
+}
+
+/* Layout for li content + actions */
+
+.li-content-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.li-actions {
+    display: inline-flex;
+    gap: 4px;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+/* Buttons inside WYSIWYG diff */
+
+.li-btn {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.li-btn:hover {
+    background: #e5e7eb;
+}
+
+.li-btn-accept {
+    border-color: #16a34a;
+    color: #166534;
+}
+
+.li-btn-reject {
+    border-color: #dc2626;
+    color: #b91c1c;
+}
+
+.li-btn-active {
+    background: #111827;
+    color: #f9fafb;
+    border-color: #111827;
+}
