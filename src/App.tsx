@@ -4,9 +4,10 @@ import { TextDiff } from "./components/TextDiff";
 import type { DiffMode } from "./components/TextDiff";
 import { SideBySideDiff } from "./components/SideBySideDiff";
 import { ReviewableDiff } from "./components/ReviewableDiff";
+import { WysiwygDiff } from "./wysiwyg/WysiwygDiff";
 import { examples } from "./examples";
 
-type ViewMode = "unified" | "side-by-side" | "review";
+type ViewMode = "unified" | "side-by-side" | "review" | "wysiwyg";
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<DiffMode>("words");
@@ -30,12 +31,10 @@ const App: React.FC = () => {
         background: "#f3f4f6",
       }}
     >
-      <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>
-        HTML Text Diff
-      </h1>
+      <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>HTML Text Diff</h1>
 
       <p style={{ marginBottom: "16px", maxWidth: "700px", color: "#555" }}>
-        Compare and review changes between two versions of raw HTML content.
+        Compare and review changes between two versions of HTML content.
       </p>
 
       {/* Controls */}
@@ -85,6 +84,7 @@ const App: React.FC = () => {
             <option value="unified">Unified</option>
             <option value="side-by-side">Side by side</option>
             <option value="review">Review (accept/reject)</option>
+            <option value="wysiwyg">WYSIWYG HTML diff</option>
           </select>
         </label>
 
@@ -144,7 +144,7 @@ const App: React.FC = () => {
         )}
       </section>
 
-      {/* Diff block */}
+      {/* Diff output section */}
       <section style={{ maxWidth: "1100px" }}>
         {viewMode === "unified" && (
           <TextDiff
@@ -163,6 +163,13 @@ const App: React.FC = () => {
 
         {viewMode === "review" && (
           <ReviewableDiff
+            original={selectedExample.original}
+            modified={selectedExample.modified}
+          />
+        )}
+
+        {viewMode === "wysiwyg" && (
+          <WysiwygDiff
             original={selectedExample.original}
             modified={selectedExample.modified}
           />
