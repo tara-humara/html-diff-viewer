@@ -1,17 +1,17 @@
 // src/examples.ts
 
 export type HtmlDiffExample = {
-    id: string;
-    label: string;
-    original: string;
-    modified: string;
+  id: string;
+  label: string;
+  original: string;
+  modified: string;
 };
 
 export const examples: HtmlDiffExample[] = [
-    {
-        id: "safety-equipment",
-        label: "Safety equipment list",
-        original: `
+  {
+    id: "safety-equipment",
+    label: "Safety equipment list",
+    original: `
 <p>Safety equipment required:</p>
 <ul>
   <li>Hard hat (Class G)</li>
@@ -19,18 +19,18 @@ export const examples: HtmlDiffExample[] = [
   <li>Steel-toed boots</li>
 </ul>
 `,
-        modified: `
+    modified: `
 <p>Safety equipment required:</p>
 <ul>
   <li>Hard hat (Class E or G)</li>
   <li>Safety goggles (Anti-fog)</li>
 </ul>
 `,
-    },
-    {
-        id: "fire-exit",
-        label: "Fire exit procedure",
-        original: `
+  },
+  {
+    id: "fire-exit",
+    label: "Fire exit procedure",
+    original: `
 <h2>Fire exit procedure</h2>
 <ol>
   <li>Stay calm and do not run.</li>
@@ -38,7 +38,7 @@ export const examples: HtmlDiffExample[] = [
   <li>Do not use the elevators.</li>
 </ol>
 `,
-        modified: `
+    modified: `
 <h2>Fire exit procedure</h2>
 <ol>
   <li>Stay calm and walk quickly.</li>
@@ -47,11 +47,11 @@ export const examples: HtmlDiffExample[] = [
   <li>Gather at the assembly point.</li>
 </ol>
 `,
-    },
-    {
-        id: "concrete-mix",
-        label: "Concrete mix specification",
-        original: `
+  },
+  {
+    id: "concrete-mix",
+    label: "Concrete mix specification",
+    original: `
 <p>Concrete mix specification:</p>
 <ul>
   <li>Cement: C25/30</li>
@@ -59,7 +59,7 @@ export const examples: HtmlDiffExample[] = [
   <li>Slump: 80mm</li>
 </ul>
 `,
-        modified: `
+    modified: `
 <p>Concrete mix specification:</p>
 <ul>
   <li>Cement: C30/37</li>
@@ -68,5 +68,37 @@ export const examples: HtmlDiffExample[] = [
   <li>Admixture: Plasticizer (as per supplier recommendations)</li>
 </ul>
 `,
-    },
+  },
+  {
+    id: "long-procedure",
+    label: "Long procedure with few edits",
+    original: `
+<h2>Inspection procedure</h2>
+<ol>
+  <li>Check PPE is worn correctly.</li>
+  <li>Verify access routes are clear.</li>
+  <li>Inspect scaffolding connections.</li>
+  <li>Confirm guardrails are in place.</li>
+  <li>Check signage is visible.</li>
+  <li>Verify fire extinguishers are accessible.</li>
+  <li>Check lighting levels in all areas.</li>
+  <li>Confirm emergency exits are unlocked.</li>
+  <li>Record observations in the logbook.</li>
+</ol>
+`,
+    modified: `
+<h2>Inspection procedure</h2>
+<ol>
+  <li>Check PPE is worn correctly.</li>
+  <li>Verify access routes are clear.</li>
+  <li>Inspect scaffolding connections.</li>
+  <li>Confirm guardrails are in place.</li>
+  <li>Check signage is visible.</li>
+  <li>Verify fire extinguishers are accessible.</li>
+  <li>Check lighting levels in all areas (lux meter if available).</li>
+  <li>Confirm emergency exits are unlocked.</li>
+  <li>Record observations in the digital logbook.</li>
+</ol>
+`,
+  },
 ];

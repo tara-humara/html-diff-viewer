@@ -89,10 +89,11 @@ export const TextDiff: React.FC<TextDiffProps> = ({
 }) => {
     const parts = getDiffParts(original, modified, mode);
 
-    // Special handling for pure line-level diff
+    // --------- SPECIAL CASE: PURE LINE MODE (line-level diff) ---------
     if (mode === "lines") {
         // Flatten parts into individual lines with their added/removed flags
-        const lineRows: { line: string; added?: boolean; removed?: boolean }[] = [];
+        const lineRows: { line: string; added?: boolean; removed?: boolean }[] =
+            [];
 
         parts.forEach((part) => {
             const lines = part.value.split("\n");
@@ -124,6 +125,18 @@ export const TextDiff: React.FC<TextDiffProps> = ({
                             borderBottom: "1px solid #eee",
                         }}
                     >
+                        {/* Change bar */}
+                        <div
+                            style={{
+                                width: "4px",
+                                backgroundColor: row.added
+                                    ? "#22c55e"
+                                    : row.removed
+                                        ? "#ef4444"
+                                        : "transparent",
+                            }}
+                        />
+
                         {/* Line number */}
                         <div
                             style={{
@@ -161,9 +174,103 @@ export const TextDiff: React.FC<TextDiffProps> = ({
         );
     }
 
-    // Default: chars / words rendering with inline highlights
+    // --------- DEFAULT: CHARS / WORDS UNIFIED VIEW WITH COLLAPSE ---------
+
+    // Recreate full diff text so we can split by line
     const diffText = parts.map((p) => p.value).join("");
     const diffLines = diffText.split("\n");
+
+    type LineKind = "added" | "removed" | "mixed" | "unchanged";
+
+    const classifyLine = (line: string): LineKind => {
+        const trimmed = line.trim();
+        if (!trimmed) return "unchanged";
+
+        const hasAdded = parts.some(
+            (p) => p.added && p.value.trim() !== "" && line.includes(p.value.trim())
+        );
+        const hasRemoved = parts.some(
+            (p) =>
+                p.removed && p.value.trim() !== "" && line.includes(p.value.trim())
+        );
+
+        if (hasAdded && hasRemoved) return "mixed";
+        if (hasAdded) return "added";
+        if (hasRemoved) return "removed";
+        return "unchanged";
+    };
+
+    const lineKinds: LineKind[] = diffLines.map((line) => classifyLine(line));
+
+    type RenderRow =
+        | {
+            kind: "context";
+            line: string;
+            lineIndex: number;
+            meta: LineKind;
+        }
+        | {
+            kind: "skipped";
+            startIndex: number;
+            endIndex: number;
+        };
+
+    const rows: RenderRow[] = [];
+    const COLLAPSE_THRESHOLD = 4; // min unchanged lines to collapse
+
+    let i = 0;
+    while (i < diffLines.length) {
+        if (lineKinds[i] === "unchanged") {
+            let j = i;
+            while (j < diffLines.length && lineKinds[j] === "unchanged") {
+                j++;
+            }
+            const blockLength = j - i;
+
+            if (blockLength > COLLAPSE_THRESHOLD) {
+                // first unchanged line
+                rows.push({
+                    kind: "context",
+                    line: diffLines[i],
+                    lineIndex: i,
+                    meta: "unchanged",
+                });
+                // collapsed middle lines
+                rows.push({
+                    kind: "skipped",
+                    startIndex: i + 1,
+                    endIndex: j - 2 >= i + 1 ? j - 2 : i + 1,
+                });
+                // last unchanged line
+                rows.push({
+                    kind: "context",
+                    line: diffLines[j - 1],
+                    lineIndex: j - 1,
+                    meta: "unchanged",
+                });
+            } else {
+                // keep all unchanged lines visible
+                for (let k = i; k < j; k++) {
+                    rows.push({
+                        kind: "context",
+                        line: diffLines[k],
+                        lineIndex: k,
+                        meta: "unchanged",
+                    });
+                }
+            }
+
+            i = j;
+        } else {
+            rows.push({
+                kind: "context",
+                line: diffLines[i],
+                lineIndex: i,
+                meta: lineKinds[i],
+            });
+            i++;
+        }
+    }
 
     return (
         <div
@@ -176,32 +283,78 @@ export const TextDiff: React.FC<TextDiffProps> = ({
                 overflowX: "auto",
             }}
         >
-            {diffLines.map((line, i) => {
-                // Determine if the entire line contains added or removed parts
-                const isAdded = parts.some(
-                    (p) => p.added && line.includes(p.value.trim())
-                );
-                const isRemoved = parts.some(
-                    (p) => p.removed && line.includes(p.value.trim())
-                );
+            {rows.map((row, idx) => {
+                if (row.kind === "skipped") {
+                    const hiddenCount = row.endIndex - row.startIndex + 1;
+                    if (hiddenCount <= 0) return null;
 
-                const lineColor =
-                    isAdded && !isRemoved
-                        ? "rgba(34, 197, 94, 0.15)"
-                        : isRemoved && !isAdded
-                            ? "rgba(239, 68, 68, 0.15)"
-                            : "transparent";
+                    return (
+                        <div
+                            key={`skipped-${idx}`}
+                            style={{
+                                display: "flex",
+                                borderBottom: "1px solid #eee",
+                                fontStyle: "italic",
+                                color: "#6b7280",
+                                background: "#f9fafb",
+                            }}
+                        >
+                            {/* Bar */}
+                            <div
+                                style={{
+                                    width: "4px",
+                                    backgroundColor: "transparent",
+                                }}
+                            />
+                            {/* Line number cell (blank) */}
+                            <div
+                                style={{
+                                    width: "40px",
+                                    textAlign: "right",
+                                    padding: "4px 8px",
+                                    background: "#f1f5f9",
+                                    borderRight: "1px solid #ddd",
+                                    userSelect: "none",
+                                }}
+                            />
+                            {/* Message */}
+                            <div
+                                style={{
+                                    padding: "4px 12px",
+                                    flex: 1,
+                                }}
+                            >
+                                … {hiddenCount} unchanged line
+                                {hiddenCount > 1 ? "s" : ""} …
+                            </div>
+                        </div>
+                    );
+                }
+
+                // context row (actual line)
+                const { line, lineIndex, meta } = row;
 
                 const barColor =
-                    isAdded && !isRemoved
+                    meta === "added"
                         ? "#22c55e"
-                        : isRemoved && !isAdded
+                        : meta === "removed"
                             ? "#ef4444"
-                            : "transparent";
+                            : meta === "mixed"
+                                ? "#3b82f6"
+                                : "transparent";
+
+                const lineBg =
+                    meta === "added"
+                        ? "rgba(34,197,94,0.15)"
+                        : meta === "removed"
+                            ? "rgba(239,68,68,0.15)"
+                            : meta === "mixed"
+                                ? "rgba(59,130,246,0.12)"
+                                : "transparent";
 
                 return (
                     <div
-                        key={i}
+                        key={`line-${idx}-${lineIndex}`}
                         style={{
                             display: "flex",
                             whiteSpace: "pre-wrap",
@@ -228,16 +381,16 @@ export const TextDiff: React.FC<TextDiffProps> = ({
                                 userSelect: "none",
                             }}
                         >
-                            {i + 1}
+                            {lineIndex + 1}
                         </div>
 
-                        {/* Line content */}
+                        {/* Line content with inline highlights */}
                         <div
                             style={{
                                 padding: "4px 12px",
                                 flex: 1,
                                 whiteSpace: "pre-wrap",
-                                backgroundColor: lineColor,
+                                backgroundColor: lineBg,
                             }}
                             dangerouslySetInnerHTML={{
                                 __html: renderLineWithHighlights(line, parts),
