@@ -3,13 +3,19 @@ import React, { useState } from "react";
 import { TextDiff } from "./components/TextDiff";
 import type { DiffMode } from "./components/TextDiff";
 import { SideBySideDiff } from "./components/SideBySideDiff";
-import { example } from "./exampleData";
+import { examples } from "./examples";
 
 type ViewMode = "unified" | "side-by-side";
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<DiffMode>("words");
   const [viewMode, setViewMode] = useState<ViewMode>("unified");
+  const [selectedExampleId, setSelectedExampleId] = useState<string>(
+    examples[0]?.id ?? ""
+  );
+
+  const selectedExample =
+    examples.find((ex) => ex.id === selectedExampleId) ?? examples[0];
 
   const showModeSelector = viewMode === "unified";
 
@@ -28,7 +34,7 @@ const App: React.FC = () => {
       </h1>
 
       <p style={{ marginBottom: "16px", maxWidth: "700px", color: "#555" }}>
-        This view compares two versions of a raw HTML content and highlights
+        This tool compares two versions of raw HTML content and highlights
         additions and deletions. Tags like {"<p>"} and {"<ul>"} are shown as
         text, not rendered.
       </p>
@@ -43,6 +49,27 @@ const App: React.FC = () => {
           gap: "16px",
         }}
       >
+        {/* Example selector */}
+        <label style={{ fontSize: "14px", color: "#374151" }}>
+          Example:{" "}
+          <select
+            value={selectedExample.id}
+            onChange={(e) => setSelectedExampleId(e.target.value)}
+            style={{
+              padding: "4px 8px",
+              borderRadius: "4px",
+              border: "1px solid #d1d5db",
+              fontSize: "14px",
+            }}
+          >
+            {examples.map((ex) => (
+              <option key={ex.id} value={ex.id}>
+                {ex.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
         {/* View mode */}
         <label style={{ fontSize: "14px", color: "#374151" }}>
           View:{" "}
@@ -61,7 +88,7 @@ const App: React.FC = () => {
           </select>
         </label>
 
-        {/* Diff granularity (unified only) */}
+        {/* Diff granularity (for unified view only) */}
         {showModeSelector && (
           <label style={{ fontSize: "14px", color: "#374151" }}>
             Diff granularity:{" "}
@@ -119,14 +146,14 @@ const App: React.FC = () => {
       <section style={{ maxWidth: "900px" }}>
         {viewMode === "unified" ? (
           <TextDiff
-            original={example.original}
-            modified={example.modified}
+            original={selectedExample.original}
+            modified={selectedExample.modified}
             mode={mode}
           />
         ) : (
           <SideBySideDiff
-            original={example.original}
-            modified={example.modified}
+            original={selectedExample.original}
+            modified={selectedExample.modified}
           />
         )}
       </section>
