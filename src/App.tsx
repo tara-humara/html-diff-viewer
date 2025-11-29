@@ -2,10 +2,16 @@
 import React, { useState } from "react";
 import { TextDiff } from "./components/TextDiff";
 import type { DiffMode } from "./components/TextDiff";
+import { SideBySideDiff } from "./components/SideBySideDiff";
 import { example } from "./exampleData";
+
+type ViewMode = "unified" | "side-by-side";
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<DiffMode>("words");
+  const [viewMode, setViewMode] = useState<ViewMode>("unified");
+
+  const showModeSelector = viewMode === "unified";
 
   return (
     <main
@@ -34,14 +40,15 @@ const App: React.FC = () => {
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
-          gap: "12px",
+          gap: "16px",
         }}
       >
+        {/* View mode */}
         <label style={{ fontSize: "14px", color: "#374151" }}>
-          Diff granularity:{" "}
+          View:{" "}
           <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value as DiffMode)}
+            value={viewMode}
+            onChange={(e) => setViewMode(e.target.value as ViewMode)}
             style={{
               padding: "4px 8px",
               borderRadius: "4px",
@@ -49,12 +56,33 @@ const App: React.FC = () => {
               fontSize: "14px",
             }}
           >
-            <option value="chars">Characters</option>
-            <option value="words">Words</option>
-            <option value="lines">Lines</option>
+            <option value="unified">Unified</option>
+            <option value="side-by-side">Side by side</option>
           </select>
         </label>
 
+        {/* Diff granularity (unified only) */}
+        {showModeSelector && (
+          <label style={{ fontSize: "14px", color: "#374151" }}>
+            Diff granularity:{" "}
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as DiffMode)}
+              style={{
+                padding: "4px 8px",
+                borderRadius: "4px",
+                border: "1px solid #d1d5db",
+                fontSize: "14px",
+              }}
+            >
+              <option value="chars">Characters</option>
+              <option value="words">Words</option>
+              <option value="lines">Lines</option>
+            </select>
+          </label>
+        )}
+
+        {/* Legend */}
         <div
           style={{
             display: "flex",
@@ -88,12 +116,19 @@ const App: React.FC = () => {
       </section>
 
       {/* Diff block */}
-      <section style={{ maxWidth: "700px" }}>
-        <TextDiff
-          original={example.original}
-          modified={example.modified}
-          mode={mode}
-        />
+      <section style={{ maxWidth: "900px" }}>
+        {viewMode === "unified" ? (
+          <TextDiff
+            original={example.original}
+            modified={example.modified}
+            mode={mode}
+          />
+        ) : (
+          <SideBySideDiff
+            original={example.original}
+            modified={example.modified}
+          />
+        )}
       </section>
     </main>
   );
