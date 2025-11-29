@@ -31,6 +31,7 @@ const ChangeInline: React.FC<{
     return (
         <span className={containerClass}>
             <span className={bubbleKindClass}>
+                {/* visible bubble */}
                 {change.type !== "add" && change.original && (
                     <span className="change-inline__original">{change.original}</span>
                 )}
@@ -40,9 +41,13 @@ const ChangeInline: React.FC<{
                 {change.type !== "remove" && change.modified && (
                     <span className="change-inline__modified">{change.modified}</span>
                 )}
-                {change.type === "remove" && !change.original && (
-                    <span className="change-inline__modified">(remove)</span>
-                )}
+
+                {/* tooltip */}
+                <span className="change-tooltip">
+                    {change.type === "replace" && `Replace:\n- ${change.original}\n+ ${change.modified}`}
+                    {change.type === "add" && `Add:\n+ ${change.modified}`}
+                    {change.type === "remove" && `Remove:\n- ${change.original}`}
+                </span>
             </span>
             <span className="change-inline__actions">
                 <button
