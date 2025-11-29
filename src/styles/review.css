@@ -1,0 +1,134 @@
+/* Container for the review mode */
+
+.review-layout {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 900px) {
+    .review-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Review panel */
+
+.review-panel {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #ffffff;
+    padding: 12px;
+}
+
+.review-panel__title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #111827;
+}
+
+.review-panel__body {
+    font-family: Menlo, Monaco, "Courier New", monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+}
+
+/* Inline change bubble */
+
+.change-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 2px;
+}
+
+.change-inline__bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    font-family: Menlo, Monaco, "Courier New", monospace;
+}
+
+.change-inline__bubble--add {
+    background: #ecfdf3;
+    border-color: #bbf7d0;
+}
+
+.change-inline__bubble--remove {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.change-inline__bubble--replace {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.change-inline__original {
+    text-decoration: line-through;
+    color: #b91c1c;
+}
+
+.change-inline__arrow {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.change-inline__modified {
+    color: #166534;
+}
+
+/* Buttons */
+
+.change-inline__actions {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.change-btn {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    cursor: pointer;
+}
+
+.change-btn:hover {
+    background: #e5e7eb;
+}
+
+.change-btn--accept {
+    border-color: #16a34a;
+    color: #166534;
+}
+
+.change-btn--reject {
+    border-color: #dc2626;
+    color: #b91c1c;
+}
+
+.change-btn--active {
+    background: #111827;
+    color: #f9fafb;
+    border-color: #111827;
+}
+
+/* Final result textarea */
+
+.review-final-text {
+    width: 100%;
+    min-height: 220px;
+    font-family: Menlo, Monaco, "Courier New", monospace;
+    font-size: 13px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    padding: 8px;
+    resize: vertical;
+    background: #f9fafb;
+}

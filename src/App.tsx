@@ -3,9 +3,10 @@ import React, { useState } from "react";
 import { TextDiff } from "./components/TextDiff";
 import type { DiffMode } from "./components/TextDiff";
 import { SideBySideDiff } from "./components/SideBySideDiff";
+import { ReviewableDiff } from "./components/ReviewableDiff";
 import { examples } from "./examples";
 
-type ViewMode = "unified" | "side-by-side";
+type ViewMode = "unified" | "side-by-side" | "review";
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<DiffMode>("words");
@@ -30,13 +31,11 @@ const App: React.FC = () => {
       }}
     >
       <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>
-        HTML Text Diff – Level 1
+        HTML Text Diff
       </h1>
 
       <p style={{ marginBottom: "16px", maxWidth: "700px", color: "#555" }}>
-        This tool compares two versions of raw HTML content and highlights
-        additions and deletions. Tags like {"<p>"} and {"<ul>"} are shown as
-        text, not rendered.
+        Compare and review changes between two versions of raw HTML content.
       </p>
 
       {/* Controls */}
@@ -85,6 +84,7 @@ const App: React.FC = () => {
           >
             <option value="unified">Unified</option>
             <option value="side-by-side">Side by side</option>
+            <option value="review">Review (accept/reject)</option>
           </select>
         </label>
 
@@ -109,49 +109,60 @@ const App: React.FC = () => {
           </label>
         )}
 
-        {/* Legend */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "8px",
-            fontSize: "12px",
-            color: "#4b5563",
-          }}
-        >
-          <span>
-            <span
-              style={{
-                backgroundColor: "rgba(34, 197, 94, 0.3)",
-                padding: "0 4px",
-                marginRight: "4px",
-              }}
-            />
-            Added
-          </span>
-          <span>
-            <span
-              style={{
-                backgroundColor: "rgba(239, 68, 68, 0.3)",
-                padding: "0 4px",
-                marginRight: "4px",
-              }}
-            />
-            Removed
-          </span>
-        </div>
+        {/* Legend (hidden in review mode) */}
+        {viewMode !== "review" && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px",
+              fontSize: "12px",
+              color: "#4b5563",
+            }}
+          >
+            <span>
+              <span
+                style={{
+                  backgroundColor: "rgba(34, 197, 94, 0.3)",
+                  padding: "0 4px",
+                  marginRight: "4px",
+                }}
+              />
+              Added
+            </span>
+            <span>
+              <span
+                style={{
+                  backgroundColor: "rgba(239, 68, 68, 0.3)",
+                  padding: "0 4px",
+                  marginRight: "4px",
+                }}
+              />
+              Removed
+            </span>
+          </div>
+        )}
       </section>
 
       {/* Diff block */}
-      <section style={{ maxWidth: "900px" }}>
-        {viewMode === "unified" ? (
+      <section style={{ maxWidth: "1100px" }}>
+        {viewMode === "unified" && (
           <TextDiff
             original={selectedExample.original}
             modified={selectedExample.modified}
             mode={mode}
           />
-        ) : (
+        )}
+
+        {viewMode === "side-by-side" && (
           <SideBySideDiff
+            original={selectedExample.original}
+            modified={selectedExample.modified}
+          />
+        )}
+
+        {viewMode === "review" && (
+          <ReviewableDiff
             original={selectedExample.original}
             modified={selectedExample.modified}
           />
