@@ -1,5 +1,5 @@
 // src/components/ReviewableDiff.tsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { buildDiffBlocks, buildMergedText } from "../reviewDiffModel";
 import type { DiffBlock, Change } from "../reviewDiffModel";
 import "../styles/review.css";
@@ -11,73 +11,81 @@ export type ReviewableDiffProps = {
 
 type Decisions = Record<string, boolean | undefined>;
 
-const ChangeInline: React.FC<{
+type ChangeInlineProps = {
     change: Change;
     decision: boolean | undefined;
     onDecision: (value: boolean) => void;
-}> = ({ change, decision, onDecision }) => {
-    const bubbleKindClass = `change-inline__bubble change-inline__bubble--${change.type}`;
-    const containerClass =
-        "change-inline" +
-        (decision === true
-            ? " change-inline--accepted"
-            : decision === false
-                ? " change-inline--rejected"
-                : "");
+    isActive: boolean;
+};
 
-    const acceptActive = decision === true;
-    const rejectActive = decision === false;
+const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
+    ({ change, decision, onDecision, isActive }, ref) => {
+        const bubbleKindClass = `change-inline__bubble change-inline__bubble--${change.type}`;
+        const containerClass =
+            "change-inline" +
+            (decision === true
+                ? " change-inline--accepted"
+                : decision === false
+                    ? " change-inline--rejected"
+                    : "") +
+            (isActive ? " change-inline--active" : "");
 
-    return (
-        <span className={containerClass}>
-            <span className={bubbleKindClass}>
-                {/* visible bubble content */}
-                {change.type !== "add" && change.original && (
-                    <span className="change-inline__original">{change.original}</span>
-                )}
-                {change.type === "replace" && (
-                    <span className="change-inline__arrow">→</span>
-                )}
-                {change.type !== "remove" && change.modified && (
-                    <span className="change-inline__modified">{change.modified}</span>
-                )}
-                {change.type === "remove" && !change.original && (
-                    <span className="change-inline__modified">(remove)</span>
-                )}
+        const acceptActive = decision === true;
+        const rejectActive = decision === false;
 
-                {/* tooltip */}
-                <span className="change-tooltip">
-                    {change.type === "replace" &&
-                        `Replace:\n- ${change.original}\n+ ${change.modified}`}
-                    {change.type === "add" && `Add:\n+ ${change.modified}`}
-                    {change.type === "remove" && `Remove:\n- ${change.original}`}
+        return (
+            <span ref={ref} className={containerClass}>
+                <span className={bubbleKindClass}>
+                    {/* visible bubble content */}
+                    {change.type !== "add" && change.original && (
+                        <span className="change-inline__original">{change.original}</span>
+                    )}
+                    {change.type === "replace" && (
+                        <span className="change-inline__arrow">→</span>
+                    )}
+                    {change.type !== "remove" && change.modified && (
+                        <span className="change-inline__modified">{change.modified}</span>
+                    )}
+                    {change.type === "remove" && !change.original && (
+                        <span className="change-inline__modified">(remove)</span>
+                    )}
+
+                    {/* tooltip */}
+                    <span className="change-tooltip">
+                        {change.type === "replace" &&
+                            `Replace:\n- ${change.original}\n+ ${change.modified}`}
+                        {change.type === "add" && `Add:\n+ ${change.modified}`}
+                        {change.type === "remove" && `Remove:\n- ${change.original}`}
+                    </span>
+                </span>
+                <span className="change-inline__actions">
+                    <button
+                        type="button"
+                        className={
+                            "change-btn change-btn--accept" +
+                            (acceptActive ? " change-btn--active" : "")
+                        }
+                        onClick={() => onDecision(true)}
+                    >
+                        Accept
+                    </button>
+                    <button
+                        type="button"
+                        className={
+                            "change-btn change-btn--reject" +
+                            (rejectActive ? " change-btn--active" : "")
+                        }
+                        onClick={() => onDecision(false)}
+                    >
+                        Reject
+                    </button>
                 </span>
             </span>
-            <span className="change-inline__actions">
-                <button
-                    type="button"
-                    className={
-                        "change-btn change-btn--accept" +
-                        (acceptActive ? " change-btn--active" : "")
-                    }
-                    onClick={() => onDecision(true)}
-                >
-                    Accept
-                </button>
-                <button
-                    type="button"
-                    className={
-                        "change-btn change-btn--reject" +
-                        (rejectActive ? " change-btn--active" : "")
-                    }
-                    onClick={() => onDecision(false)}
-                >
-                    Reject
-                </button>
-            </span>
-        </span>
-    );
-};
+        );
+    }
+);
+
+ChangeInline.displayName = "ChangeInline";
 
 export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
     original,
@@ -91,8 +99,9 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
     const [decisions, setDecisions] = useState<Decisions>({});
     const [showRendered, setShowRendered] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-    // List of all changes (for stats + bulk actions)
+    // List of all changes (for stats + keyboard navigation)
     const changes: Change[] = useMemo(
         () =>
             blocks
@@ -101,6 +110,19 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
         [blocks]
     );
 
+    // Map change id -> index in `changes`
+    const changeIndexMap = useMemo(() => {
+        const map: Record<string, number> = {};
+        changes.forEach((c, i) => {
+            map[c.id] = i;
+        });
+        return map;
+    }, [changes]);
+
+    // refs for scrolling to active change
+    const changeRefs = useRef<Record<string, HTMLSpanElement | null>>({});
+
+    // Stats
     const stats = useMemo(() => {
         const total = changes.length;
         let accepted = 0;
@@ -118,10 +140,35 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
 
     const reviewComplete = stats.total > 0 && stats.pending === 0;
 
+    // Merged text
     const mergedText = useMemo(
         () => buildMergedText(blocks, decisions),
         [blocks, decisions]
     );
+
+    // Ensure we have a valid activeIndex when there are changes
+    useEffect(() => {
+        if (changes.length === 0) {
+            if (activeIndex !== null) setActiveIndex(null);
+            return;
+        }
+        if (activeIndex === null) {
+            setActiveIndex(0);
+        } else if (activeIndex >= changes.length) {
+            setActiveIndex(changes.length - 1);
+        }
+    }, [changes, activeIndex]);
+
+    // Scroll active change into view
+    useEffect(() => {
+        if (activeIndex === null) return;
+        const change = changes[activeIndex];
+        if (!change) return;
+        const el = changeRefs.current[change.id];
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }, [activeIndex, changes]);
 
     const handleDecision = (id: string, value: boolean) => {
         setDecisions((prev) => ({ ...prev, [id]: value }));
@@ -168,6 +215,73 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
             console.error("Failed to download HTML:", err);
         }
     };
+
+    // Keyboard shortcuts: J/K/A/R
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            // Ignore when typing in inputs/textareas/contentEditable
+            const target = e.target as HTMLElement | null;
+            if (
+                target &&
+                (target.tagName === "INPUT" ||
+                    target.tagName === "TEXTAREA" ||
+                    target.isContentEditable)
+            ) {
+                return;
+            }
+
+            if (changes.length === 0) return;
+
+            const key = e.key.toLowerCase();
+
+            if (key === "j") {
+                e.preventDefault();
+                setActiveIndex((prev) => {
+                    const len = changes.length;
+                    if (!len) return prev;
+                    if (prev === null) return 0;
+                    return (prev + 1) % len;
+                });
+            } else if (key === "k") {
+                e.preventDefault();
+                setActiveIndex((prev) => {
+                    const len = changes.length;
+                    if (!len) return prev;
+                    if (prev === null) return len - 1;
+                    return (prev - 1 + len) % len;
+                });
+            } else if (key === "a") {
+                e.preventDefault();
+                setDecisions((prev) => {
+                    const len = changes.length;
+                    if (!len) return prev;
+                    const idx = activeIndex ?? 0;
+                    const change = changes[idx];
+                    if (!change) return prev;
+                    return { ...prev, [change.id]: true };
+                });
+                if (activeIndex === null) {
+                    setActiveIndex(0);
+                }
+            } else if (key === "r") {
+                e.preventDefault();
+                setDecisions((prev) => {
+                    const len = changes.length;
+                    if (!len) return prev;
+                    const idx = activeIndex ?? 0;
+                    const change = changes[idx];
+                    if (!change) return prev;
+                    return { ...prev, [change.id]: false };
+                });
+                if (activeIndex === null) {
+                    setActiveIndex(0);
+                }
+            }
+        };
+
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, [changes, activeIndex]);
 
     return (
         <div className="review-layout">
@@ -238,12 +352,17 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
 
                         const { change } = block;
                         const decision = decisions[change.id];
+                        const changeIdx = changeIndexMap[change.id] ?? 0;
 
                         return (
                             <ChangeInline
                                 key={change.id}
+                                ref={(el) => {
+                                    changeRefs.current[change.id] = el;
+                                }}
                                 change={change}
                                 decision={decision}
+                                isActive={activeIndex === changeIdx}
                                 onDecision={(v) => handleDecision(change.id, v)}
                             />
                         );

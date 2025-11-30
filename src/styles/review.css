@@ -420,3 +420,9 @@
     color: #16a34a;
     margin-left: 4px;
 }
+
+/* Active change when using keyboard navigation */
+.change-inline--active {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}

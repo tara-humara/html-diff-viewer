@@ -197,3 +197,11 @@
         box-shadow: inset 2px 0 0 #dc2626, 0 0 0 8px rgba(239, 68, 68, 0);
     }
 }
+
+/* Active item when using keyboard navigation */
+.li-active {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    background-color: rgba(59, 130, 246, 0.06);
+    /* subtle blue bg */
+}
