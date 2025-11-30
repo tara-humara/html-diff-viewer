@@ -89,6 +89,8 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
     );
 
     const [decisions, setDecisions] = useState<Decisions>({});
+    const [showRendered, setShowRendered] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     // List of all changes (for stats + bulk actions)
     const changes: Change[] = useMemo(
@@ -139,6 +141,34 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
         setDecisions({});
     };
 
+    const handleCopyHtml = async () => {
+        try {
+            await navigator.clipboard.writeText(mergedText);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch (err) {
+            console.error("Failed to copy HTML:", err);
+        }
+    };
+
+    const handleDownloadHtml = () => {
+        try {
+            const blob = new Blob([mergedText], {
+                type: "text/html;charset=utf-8",
+            });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "merged.html";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("Failed to download HTML:", err);
+        }
+    };
+
     return (
         <div className="review-layout">
             {/* Left: review changes */}
@@ -182,7 +212,9 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                             type="button"
                             className="review-bulk-btn review-bulk-btn--reset"
                             onClick={handleResetAll}
-                            disabled={changes.length === 0 && Object.keys(decisions).length === 0}
+                            disabled={
+                                changes.length === 0 && Object.keys(decisions).length === 0
+                            }
                         >
                             Reset
                         </button>
@@ -192,7 +224,9 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                 {reviewComplete && (
                     <div className="review-banner review-banner--success">
                         <span className="review-banner__icon">✅</span>
-                        <span>Review complete: all changes have been accepted or rejected.</span>
+                        <span>
+                            Review complete: all changes have been accepted or rejected.
+                        </span>
                     </div>
                 )}
 
@@ -217,12 +251,63 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                 </div>
             </div>
 
-            {/* Right: final merged text */}
+            {/* Right: final merged text / HTML preview */}
             <div className="review-panel">
-                <div className="review-panel__title">
-                    Final result (after decisions)
+                <div className="review-final-header">
+                    <div className="review-final-title">
+                        Final result (after decisions)
+                    </div>
+                    <div className="review-final-toolbar">
+                        <button
+                            type="button"
+                            className={
+                                "review-toggle-btn" +
+                                (showRendered ? "" : " review-toggle-btn--active")
+                            }
+                            onClick={() => setShowRendered(false)}
+                        >
+                            Raw HTML
+                        </button>
+                        <button
+                            type="button"
+                            className={
+                                "review-toggle-btn" +
+                                (showRendered ? " review-toggle-btn--active" : "")
+                            }
+                            onClick={() => setShowRendered(true)}
+                        >
+                            Rendered HTML
+                        </button>
+                        <button
+                            type="button"
+                            className="review-action-btn"
+                            onClick={handleCopyHtml}
+                        >
+                            Copy HTML
+                        </button>
+                        <button
+                            type="button"
+                            className="review-action-btn"
+                            onClick={handleDownloadHtml}
+                        >
+                            Download .html
+                        </button>
+                        {copied && <span className="review-copied-hint">Copied ✓</span>}
+                    </div>
                 </div>
-                <textarea className="review-final-text" value={mergedText} readOnly />
+
+                {showRendered ? (
+                    <div
+                        className="review-final-rendered"
+                        dangerouslySetInnerHTML={{ __html: mergedText }}
+                    />
+                ) : (
+                    <textarea
+                        className="review-final-text"
+                        value={mergedText}
+                        readOnly
+                    />
+                )}
             </div>
         </div>
     );
