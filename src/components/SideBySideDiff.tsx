@@ -1,6 +1,7 @@
 // src/components/SideBySideDiff.tsx
 import React from "react";
-import { diffLines } from "diff";
+import { diffLines, diffWords, diffChars } from "diff";
+import type { DiffMode } from "./TextDiff";
 import "../styles/diff.css";
 
 type DiffPart = {
@@ -12,6 +13,7 @@ type DiffPart = {
 export type SideBySideDiffProps = {
     original: string;
     modified: string;
+    mode: DiffMode;
 };
 
 type RowType = "unchanged" | "added" | "removed";
@@ -25,18 +27,29 @@ type Row = {
 };
 
 /**
- * Side-by-side line diff.
+ * Side-by-side diff.
  * - Left: original
  * - Right: modified
- * - Removed lines only on the left (red)
- * - Added lines only on the right (green)
- * - Unchanged lines appear on both sides
+ * - Removed pieces only on the left (red)
+ * - Added pieces only on the right (green)
+ * - Unchanged pieces appear on both sides
+ * The granularity (chars / words / lines) is controlled by `mode`.
  */
 export const SideBySideDiff: React.FC<SideBySideDiffProps> = ({
     original,
     modified,
+    mode,
 }) => {
-    const parts = diffLines(original.trim(), modified.trim()) as DiffPart[];
+    // Choose the diff function based on granularity
+    let parts: DiffPart[];
+    if (mode === "chars") {
+        parts = diffChars(original, modified) as DiffPart[];
+    } else if (mode === "words") {
+        parts = diffWords(original, modified) as DiffPart[];
+    } else {
+        // "lines"
+        parts = diffLines(original, modified) as DiffPart[];
+    }
 
     const rows: Row[] = [];
     let leftLine = 1;
