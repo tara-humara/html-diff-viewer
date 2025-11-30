@@ -77,8 +77,10 @@ const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
                             (acceptActive ? " change-btn--active" : "")
                         }
                         onClick={() => onDecision(true)}
+                        aria-label="Accept change"
+                        title="Accept change"
                     >
-                        Accept
+                        <span className="change-btn__icon">✓</span>
                     </button>
                     <button
                         type="button"
@@ -87,8 +89,10 @@ const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
                             (rejectActive ? " change-btn--active" : "")
                         }
                         onClick={() => onDecision(false)}
+                        aria-label="Reject change"
+                        title="Reject change"
                     >
-                        Reject
+                        <span className="change-btn__icon">✕</span>
                     </button>
                 </span>
             </span>

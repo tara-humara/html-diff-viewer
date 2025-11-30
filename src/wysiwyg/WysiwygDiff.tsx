@@ -246,6 +246,19 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             const WrapperTag: any = node.type === "block" ? "div" : "li";
             const ContentTag: any = node.type === "block" ? node.tag : "span";
 
+            // Handlers for icon buttons
+            const onAcceptClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                const newDecision = decision === "accept" ? undefined : "accept";
+                setDecision(node.id, newDecision);
+            };
+
+            const onRejectClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                const newDecision = decision === "reject" ? undefined : "reject";
+                setDecision(node.id, newDecision);
+            };
+
             // --- Resolved state: show final text with no diff colours ---
             if (decision === "accept" || decision === "reject") {
                 const finalText =
@@ -273,15 +286,11 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                                         "li-btn li-btn-accept" +
                                         (decision === "accept" ? " li-btn-active" : "")
                                     }
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDecision(
-                                            node.id,
-                                            decision === "accept" ? undefined : "accept"
-                                        );
-                                    }}
+                                    onClick={onAcceptClick}
+                                    aria-label="Accept change"
+                                    title="Accept change"
                                 >
-                                    Accept
+                                    <span className="li-btn__icon">✓</span>
                                 </button>
                                 <button
                                     type="button"
@@ -289,15 +298,11 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                                         "li-btn li-btn-reject" +
                                         (decision === "reject" ? " li-btn-active" : "")
                                     }
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDecision(
-                                            node.id,
-                                            decision === "reject" ? undefined : "reject"
-                                        );
-                                    }}
+                                    onClick={onRejectClick}
+                                    aria-label="Reject change"
+                                    title="Reject change"
                                 >
-                                    Reject
+                                    <span className="li-btn__icon">✕</span>
                                 </button>
                             </span>
                         </div>
@@ -327,15 +332,11 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                                     "li-btn li-btn-accept" +
                                     (decision === "accept" ? " li-btn-active" : "")
                                 }
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDecision(
-                                        node.id,
-                                        decision === "accept" ? undefined : "accept"
-                                    );
-                                }}
+                                onClick={onAcceptClick}
+                                aria-label="Accept change"
+                                title="Accept change"
                             >
-                                Accept
+                                <span className="li-btn__icon">✓</span>
                             </button>
                             <button
                                 type="button"
@@ -343,15 +344,11 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                                     "li-btn li-btn-reject" +
                                     (decision === "reject" ? " li-btn-active" : "")
                                 }
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDecision(
-                                        node.id,
-                                        decision === "reject" ? undefined : "reject"
-                                    );
-                                }}
+                                onClick={onRejectClick}
+                                aria-label="Reject change"
+                                title="Reject change"
                             >
-                                Reject
+                                <span className="li-btn__icon">✕</span>
                             </button>
                         </span>
                     </div>
