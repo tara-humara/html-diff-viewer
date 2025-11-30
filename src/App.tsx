@@ -172,7 +172,7 @@ const App: React.FC = () => {
             Compare and validate AI-generated updates before merging them.
           </p>
 
-          {/* Example + granularity */}
+          {/* Example selector only */}
           <section
             style={{
               display: "flex",
@@ -181,7 +181,6 @@ const App: React.FC = () => {
               alignItems: "center",
             }}
           >
-            {/* Example selector */}
             <label
               style={{
                 fontSize: "14px",
@@ -205,31 +204,6 @@ const App: React.FC = () => {
                     {ex.label}
                   </option>
                 ))}
-              </select>
-            </label>
-
-            {/* Diff granularity */}
-            <label
-              style={{
-                fontSize: "14px",
-                color: "#374151",
-                fontWeight: 500,
-              }}
-            >
-              Diff granularity (text diff):{" "}
-              <select
-                value={mode}
-                onChange={(e) => setMode(e.target.value as DiffMode)}
-                style={{
-                  padding: "4px 8px",
-                  borderRadius: "6px",
-                  border: "1px solid #d1d5db",
-                  fontSize: "14px",
-                }}
-              >
-                <option value="chars">Characters</option>
-                <option value="words">Words</option>
-                <option value="lines">Lines</option>
               </select>
             </label>
           </section>
@@ -294,31 +268,66 @@ const App: React.FC = () => {
             <div
               style={{
                 display: "flex",
+                flexWrap: "wrap",
                 gap: "8px",
                 marginBottom: "4px",
+                alignItems: "center",
+                justifyContent: "space-between",
               }}
             >
-              <button
-                type="button"
-                style={{
-                  ...subTab,
-                  ...(diffView === "unified" ? subTabActive : {}),
-                }}
-                onClick={() => setDiffView("unified")}
-              >
-                Unified text diff
-              </button>
+              {/* Left: which diff view */}
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  style={{
+                    ...subTab,
+                    ...(diffView === "unified" ? subTabActive : {}),
+                  }}
+                  onClick={() => setDiffView("unified")}
+                >
+                  Unified text diff
+                </button>
 
-              <button
-                type="button"
+                <button
+                  type="button"
+                  style={{
+                    ...subTab,
+                    ...(diffView === "side-by-side" ? subTabActive : {}),
+                  }}
+                  onClick={() => setDiffView("side-by-side")}
+                >
+                  Side-by-side text diff
+                </button>
+              </div>
+
+              {/* Right: granularity selector */}
+              <label
                 style={{
-                  ...subTab,
-                  ...(diffView === "side-by-side" ? subTabActive : {}),
+                  fontSize: "14px",
+                  color: "#374151",
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  marginTop: "4px",
                 }}
-                onClick={() => setDiffView("side-by-side")}
               >
-                Side-by-side text diff
-              </button>
+                Granularity:
+                <select
+                  value={mode}
+                  onChange={(e) => setMode(e.target.value as DiffMode)}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    fontSize: "13px",
+                  }}
+                >
+                  <option value="chars">Characters</option>
+                  <option value="words">Words</option>
+                  <option value="lines">Lines</option>
+                </select>
+              </label>
             </div>
           )}
 
@@ -383,7 +392,7 @@ const App: React.FC = () => {
               <SideBySideDiff
                 original={selectedExample.original}
                 modified={selectedExample.modified}
-                mode={mode}   // ★ granularity passed
+                mode={mode}
               />
             </section>
           )}
