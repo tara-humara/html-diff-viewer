@@ -42,21 +42,25 @@ const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
                 onClick={() => onActivate()}
             >
                 <span className={bubbleKindClass}>
-                    {/* visible bubble content */}
-                    {change.type !== "add" && change.original && (
-                        <span className="change-inline__original">{change.original}</span>
-                    )}
-                    {change.type === "replace" && (
-                        <span className="change-inline__arrow">→</span>
-                    )}
-                    {change.type !== "remove" && change.modified && (
-                        <span className="change-inline__modified">
-                            {change.modified}
-                        </span>
-                    )}
-                    {change.type === "remove" && !change.original && (
-                        <span className="change-inline__modified">(remove)</span>
-                    )}
+                    {/* content kept on one line */}
+                    <span className="change-inline__content">
+                        {change.type !== "add" && change.original && (
+                            <span className="change-inline__original">
+                                {change.original}
+                            </span>
+                        )}
+                        {change.type === "replace" && (
+                            <span className="change-inline__arrow">→</span>
+                        )}
+                        {change.type !== "remove" && change.modified && (
+                            <span className="change-inline__modified">
+                                {change.modified}
+                            </span>
+                        )}
+                        {change.type === "remove" && !change.original && (
+                            <span className="change-inline__modified">(remove)</span>
+                        )}
+                    </span>
 
                     {/* tooltip */}
                     <span className="change-tooltip">
@@ -323,7 +327,9 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                     <div>
                         <div className="review-panel__title">Review suggestions</div>
                         <div className="review-stats">
-                            <span className="review-stats__pill">Total: {stats.total}</span>
+                            <span className="review-stats__pill">
+                                Total: {stats.total}
+                            </span>
                             <span className="review-stats__pill review-stats__pill--accepted">
                                 Accepted: {stats.accepted}
                             </span>
@@ -425,7 +431,8 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                             <div className="review-minimap">
                                 {changes.map((change, idx) => {
                                     const decision = decisions[change.id];
-                                    const top = ((idx + 0.5) / changes.length) * 100;
+                                    const top =
+                                        ((idx + 0.5) / changes.length) * 100;
 
                                     let dotClass = "review-minimap__dot";
                                     if (decision === true)

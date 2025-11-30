@@ -549,3 +549,34 @@
     box-shadow: 0 0 0 2px rgba(30, 77, 106, 0.7);
     opacity: 1;
 }
+
+/* Prevent diff bubbles from wrapping onto multiple lines */
+.inline-added,
+.inline-removed,
+.diff-span,
+.diff-segment,
+.change-chunk,
+.change-inline__bubble,
+.change-inline__content {
+    white-space: nowrap;
+}
+
+/* Make added/removed inline bubbles compact and aligned */
+.inline-added,
+.inline-removed {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    padding-top: 0.1rem;
+    padding-bottom: 0.1rem;
+    margin: 0 2px;
+    /* optional: improves spacing */
+}
+
+/* Main fix: keeps replacement bubbles (E → G, Anti etc.) on one line */
+.change-inline__content {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    white-space: nowrap;
+}
