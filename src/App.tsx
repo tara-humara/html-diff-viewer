@@ -7,6 +7,14 @@ import { ReviewableDiff } from "./components/ReviewableDiff";
 import { WysiwygDiff } from "./wysiwyg/WysiwygDiff";
 import { examples } from "./examples";
 
+// Heroicons
+import {
+  DocumentTextIcon,
+  EyeIcon,
+  AdjustmentsHorizontalIcon,
+  Squares2X2Icon,
+} from "@heroicons/react/24/outline";
+
 // Small pill showing "Step X"
 const StepPill: React.FC<{ step: number }> = ({ step }) => (
   <span
@@ -26,12 +34,32 @@ const StepPill: React.FC<{ step: number }> = ({ step }) => (
   </span>
 );
 
-// Section title with pill + title text
-const SectionTitle: React.FC<{ step: number; title: string }> = ({
-  step,
-  title,
-}) => (
-  <div style={{ display: "flex", alignItems: "center", marginBottom: "6px" }}>
+// Section title with icon + pill + title text
+const SectionTitle: React.FC<{
+  step: number;
+  title: string;
+  icon: React.ReactNode;
+}> = ({ step, title, icon }) => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      marginBottom: "6px",
+    }}
+  >
+    <div
+      style={{
+        width: "20px",
+        height: "20px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#0b2e4e",
+      }}
+    >
+      {icon}
+    </div>
     <StepPill step={step} />
     <h2
       style={{
@@ -47,11 +75,6 @@ const SectionTitle: React.FC<{ step: number; title: string }> = ({
 );
 
 const App: React.FC = () => {
-  // Disable browser scroll restoration globally for this SPA
-  if ("scrollRestoration" in window.history) {
-    window.history.scrollRestoration = "manual";
-  }
-
   const [mode, setMode] = useState<DiffMode>("words");
   const [selectedExampleId, setSelectedExampleId] = useState<string>(
     examples[0]?.id ?? ""
@@ -60,14 +83,9 @@ const App: React.FC = () => {
   const selectedExample =
     examples.find((ex) => ex.id === selectedExampleId) ?? examples[0];
 
-  // Always start at the very top when the app mounts
+  // Make sure the page starts at the top on load
   useEffect(() => {
-    // Run after React paints
-    requestAnimationFrame(() => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    });
+    window.scrollTo(0, 0);
   }, []);
 
   return (
@@ -225,7 +243,11 @@ const App: React.FC = () => {
               boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
             }}
           >
-            <SectionTitle step={1} title="Review suggestions (raw HTML)" />
+            <SectionTitle
+              step={1}
+              title="Review suggestions (raw HTML)"
+              icon={<DocumentTextIcon width={20} height={20} />}
+            />
             <p
               style={{
                 fontSize: "13px",
@@ -253,7 +275,11 @@ const App: React.FC = () => {
               boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
             }}
           >
-            <SectionTitle step={2} title="Visual HTML (WYSIWYG)" />
+            <SectionTitle
+              step={2}
+              title="Visual HTML (WYSIWYG)"
+              icon={<EyeIcon width={20} height={20} />}
+            />
             <p
               style={{
                 fontSize: "13px",
@@ -291,9 +317,22 @@ const App: React.FC = () => {
                 marginBottom: "4px",
                 display: "flex",
                 alignItems: "center",
+                gap: "8px",
                 listStyle: "none",
               }}
             >
+              <div
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#0b2e4e",
+                }}
+              >
+                <AdjustmentsHorizontalIcon width={20} height={20} />
+              </div>
               <StepPill step={3} />
               <span>Advanced: unified text diff</span>
             </summary>
@@ -334,9 +373,22 @@ const App: React.FC = () => {
                 marginBottom: "4px",
                 display: "flex",
                 alignItems: "center",
+                gap: "8px",
                 listStyle: "none",
               }}
             >
+              <div
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#0b2e4e",
+                }}
+              >
+                <Squares2X2Icon width={20} height={20} />
+              </div>
               <StepPill step={4} />
               <span>Advanced: side-by-side text diff</span>
             </summary>

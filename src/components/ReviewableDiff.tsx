@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { buildDiffBlocks, buildMergedText } from "../reviewDiffModel";
 import type { DiffBlock, Change } from "../reviewDiffModel";
+import { EmptyState } from "./EmptyState";
 import "../styles/review.css";
 
 export type ReviewableDiffProps = {
@@ -49,7 +50,9 @@ const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
                         <span className="change-inline__arrow">→</span>
                     )}
                     {change.type !== "remove" && change.modified && (
-                        <span className="change-inline__modified">{change.modified}</span>
+                        <span className="change-inline__modified">
+                            {change.modified}
+                        </span>
                     )}
                     {change.type === "remove" && !change.original && (
                         <span className="change-inline__modified">(remove)</span>
@@ -118,6 +121,8 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
         [blocks]
     );
 
+    const hasChanges = changes.length > 0;
+
     // Map change id -> index in `changes`
     const changeIndexMap = useMemo(() => {
         const map: Record<string, number> = {};
@@ -154,20 +159,19 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
         [blocks, decisions]
     );
 
-    // Ensure we have a valid activeIndex when there are changes
+    // Ensure we have a valid activeIndex when there are changes,
+    // but do NOT auto-select the first change on initial mount
     useEffect(() => {
         if (changes.length === 0) {
             if (activeIndex !== null) setActiveIndex(null);
             return;
         }
-        if (activeIndex === null) {
-            setActiveIndex(0);
-        } else if (activeIndex >= changes.length) {
+        if (activeIndex !== null && activeIndex >= changes.length) {
             setActiveIndex(changes.length - 1);
         }
     }, [changes, activeIndex]);
 
-    // Scroll active change into view
+    // Scroll active change into view (only after user interaction)
     useEffect(() => {
         if (activeIndex === null) return;
         const change = changes[activeIndex];
@@ -315,9 +319,7 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                     <div>
                         <div className="review-panel__title">Review suggestions</div>
                         <div className="review-stats">
-                            <span className="review-stats__pill">
-                                Total: {stats.total}
-                            </span>
+                            <span className="review-stats__pill">Total: {stats.total}</span>
                             <span className="review-stats__pill review-stats__pill--accepted">
                                 Accepted: {stats.accepted}
                             </span>
@@ -376,66 +378,77 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                     </div>
                 )}
 
-                <div className="review-panel__body review-panel__body--with-minimap">
-                    {/* Main text area */}
-                    <div className="review-body-text">
-                        {blocks.map((block, idx) => {
-                            if (block.kind === "text") {
-                                return <span key={idx}>{block.text}</span>;
-                            }
-
-                            const { change } = block;
-                            const decision = decisions[change.id];
-                            const changeIdx = changeIndexMap[change.id] ?? 0;
-
-                            return (
-                                <ChangeInline
-                                    key={change.id}
-                                    ref={(el) => {
-                                        changeRefs.current[change.id] = el;
-                                    }}
-                                    change={change}
-                                    decision={decision}
-                                    isActive={activeIndex === changeIdx}
-                                    onActivate={() => setActiveIndex(changeIdx)}
-                                    onDecision={(v) => handleDecision(change.id, v)}
-                                />
-                            );
-                        })}
+                {/* Body: either empty state or diff + minimap */}
+                {!hasChanges ? (
+                    <div className="review-panel__body">
+                        <EmptyState
+                            variant="info"
+                            title="No suggestions pending"
+                            description="Original and modified HTML are identical. There’s nothing to review here."
+                        />
                     </div>
-
-                    {/* Minimap on the right */}
-                    {changes.length > 0 && (
-                        <div className="review-minimap">
-                            {changes.map((change, idx) => {
-                                const decision = decisions[change.id];
-                                const top = ((idx + 0.5) / changes.length) * 100;
-
-                                let dotClass = "review-minimap__dot";
-                                if (decision === true)
-                                    dotClass += " review-minimap__dot--accepted";
-                                else if (decision === false)
-                                    dotClass += " review-minimap__dot--rejected";
-                                else dotClass += " review-minimap__dot--pending";
-
-                                if (activeIndex === idx) {
-                                    dotClass += " review-minimap__dot--active";
+                ) : (
+                    <div className="review-panel__body review-panel__body--with-minimap">
+                        {/* Main text area */}
+                        <div className="review-body-text">
+                            {blocks.map((block, idx) => {
+                                if (block.kind === "text") {
+                                    return <span key={idx}>{block.text}</span>;
                                 }
 
+                                const { change } = block;
+                                const decision = decisions[change.id];
+                                const changeIdx = changeIndexMap[change.id] ?? 0;
+
                                 return (
-                                    <button
+                                    <ChangeInline
                                         key={change.id}
-                                        type="button"
-                                        className={dotClass}
-                                        style={{ top: `${top}%` }}
-                                        onClick={() => setActiveIndex(idx)}
-                                        aria-label={`Jump to change ${idx + 1}`}
+                                        ref={(el) => {
+                                            changeRefs.current[change.id] = el;
+                                        }}
+                                        change={change}
+                                        decision={decision}
+                                        isActive={activeIndex === changeIdx}
+                                        onActivate={() => setActiveIndex(changeIdx)}
+                                        onDecision={(v) => handleDecision(change.id, v)}
                                     />
                                 );
                             })}
                         </div>
-                    )}
-                </div>
+
+                        {/* Minimap on the right */}
+                        {changes.length > 0 && (
+                            <div className="review-minimap">
+                                {changes.map((change, idx) => {
+                                    const decision = decisions[change.id];
+                                    const top = ((idx + 0.5) / changes.length) * 100;
+
+                                    let dotClass = "review-minimap__dot";
+                                    if (decision === true)
+                                        dotClass += " review-minimap__dot--accepted";
+                                    else if (decision === false)
+                                        dotClass += " review-minimap__dot--rejected";
+                                    else dotClass += " review-minimap__dot--pending";
+
+                                    if (activeIndex === idx) {
+                                        dotClass += " review-minimap__dot--active";
+                                    }
+
+                                    return (
+                                        <button
+                                            key={change.id}
+                                            type="button"
+                                            className={dotClass}
+                                            style={{ top: `${top}%` }}
+                                            onClick={() => setActiveIndex(idx)}
+                                            aria-label={`Jump to change ${idx + 1}`}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Right: final merged text / HTML preview */}
@@ -489,11 +502,7 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                         dangerouslySetInnerHTML={{ __html: mergedText }}
                     />
                 ) : (
-                    <textarea
-                        className="review-final-text"
-                        value={mergedText}
-                        readOnly
-                    />
+                    <textarea className="review-final-text" value={mergedText} readOnly />
                 )}
             </div>
         </div>

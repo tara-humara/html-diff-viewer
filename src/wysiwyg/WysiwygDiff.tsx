@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { diffHtmlTrees } from "./diff";
 import type { WysiwygNode, InlinePart } from "./types";
 import { HtmlSideBySide } from "./HtmlSideBySide";
+import { EmptyState } from "../components/EmptyState";
 import "./styles.css";
 
 export type WysiwygDiffProps = {
@@ -75,21 +76,19 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         return { total, accepted, rejected, pending };
     }, [interactiveIds, decisions]);
 
-    // Ensure activeIndex is valid
+    // Ensure activeIndex is valid, but don't auto-select the first one
     useEffect(() => {
         if (interactiveIds.length === 0) {
             if (activeIndex !== null) setActiveIndex(null);
             return;
         }
 
-        if (activeIndex === null) {
-            setActiveIndex(0);
-        } else if (activeIndex >= interactiveIds.length) {
+        if (activeIndex !== null && activeIndex >= interactiveIds.length) {
             setActiveIndex(interactiveIds.length - 1);
         }
     }, [interactiveIds, activeIndex]);
 
-    // Scroll active node into view (review mode only)
+    // Scroll active node into view (review mode only, after user interaction)
     useEffect(() => {
         if (panelMode !== "review") return;
         if (activeIndex === null) return;
@@ -266,9 +265,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                         onClick={() => setActiveIndex(idx)}
                     >
                         <div className="li-content-row">
-                            <ContentTag className="li-resolved-html">
-                                {finalText}
-                            </ContentTag>
+                            <ContentTag className="li-resolved-html">{finalText}</ContentTag>
                             <span className="li-actions">
                                 <button
                                     type="button"
@@ -446,50 +443,75 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 <div className="wysiwyg-banner wysiwyg-banner--success">
                     <span className="wysiwyg-banner__icon">✔</span>
                     <span>
-                        Review complete: all changes have been accepted or rejected.
+                        <span
+                            style={{
+                                display: "block",
+                                fontWeight: 600,
+                            }}
+                        >
+                            Review complete: all changes have been accepted or rejected.
+                        </span>
+                        <span
+                            style={{
+                                display: "block",
+                                fontSize: "12px",
+                                color: "#166534",
+                                marginTop: "2px",
+                            }}
+                        >
+                            Switch to HTML preview to check the final merged document.
+                        </span>
                     </span>
                 </div>
             )}
 
             {/* Content */}
             {panelMode === "review" ? (
-                <div className="wysiwyg-content-wrapper">
-                    <div className="wysiwyg-content">{renderNode(tree)}</div>
+                stats.total === 0 ? (
+                    <EmptyState
+                        variant="info"
+                        title="No suggestions pending"
+                        description="Original and modified HTML are identical. Switch to HTML preview to see the rendered document."
+                    />
+                ) : (
+                    <div className="wysiwyg-content-wrapper">
+                        <div className="wysiwyg-content">{renderNode(tree)}</div>
 
-                    {interactiveIds.length > 0 && (
-                        <div className="wysiwyg-minimap">
-                            {interactiveIds.map((id, idx) => {
-                                const decision = decisions[id];
-                                const top =
-                                    ((idx + 0.5) / interactiveIds.length) * 100;
+                        {interactiveIds.length > 0 && (
+                            <div className="wysiwyg-minimap">
+                                {interactiveIds.map((id, idx) => {
+                                    const decision = decisions[id];
+                                    const top =
+                                        ((idx + 0.5) / interactiveIds.length) * 100;
 
-                                let dotClass = "wysiwyg-minimap__dot";
-                                if (decision === "accept") {
-                                    dotClass += " wysiwyg-minimap__dot--accepted";
-                                } else if (decision === "reject") {
-                                    dotClass += " wysiwyg-minimap__dot--rejected";
-                                } else {
-                                    dotClass += " wysiwyg-minimap__dot--pending";
-                                }
+                                    let dotClass = "wysiwyg-minimap__dot";
+                                    if (decision === "accept") {
+                                        dotClass += " wysiwyg-minimap__dot--accepted";
+                                    } else if (decision === "reject") {
+                                        dotClass += " wysiwyg-minimap__dot--rejected";
+                                    } else {
+                                        dotClass += " wysiwyg-minimap__dot--pending";
+                                    }
 
-                                if (activeIndex === idx) {
-                                    dotClass += " wysiwyg-minimap__dot--active";
-                                }
+                                    if (activeIndex === idx) {
+                                        dotClass += " wysiwyg-minimap__dot--active";
+                                    }
 
-                                return (
-                                    <button
-                                        key={id}
-                                        type="button"
-                                        className={dotClass}
-                                        style={{ top: `${top}%` }}
-                                        onClick={() => setActiveIndex(idx)}
-                                        aria-label={`Jump to block ${idx + 1}`}
-                                    />
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
+                                    return (
+                                        <button
+                                            key={id}
+                                            type="button"
+                                            className={dotClass}
+                                            style={{ top: `${top}%` }}
+                                            onClick={() => setActiveIndex(idx)}
+                                            aria-label={`Jump to block ${idx + 1}`}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )
             ) : (
                 <HtmlSideBySide original={original} modified={modified} />
             )}
