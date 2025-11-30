@@ -39,6 +39,12 @@ function isBlockNode(
     return node.type === "block";
 }
 
+/**
+ * Root-level diff:
+ * - Match children by index
+ * - Prefer structural diff when node kinds match
+ * - If they don't match, fall back to a text-only diff of both nodes
+ */
 function diffRoot(a: WysiwygNode, b: WysiwygNode): WysiwygNode {
     if (!isRootNode(a) || !isRootNode(b)) {
         return isRootNode(b) ? b : a;
@@ -51,11 +57,13 @@ function diffRoot(a: WysiwygNode, b: WysiwygNode): WysiwygNode {
         const aNode = a.children[i];
         const bNode = b.children[i];
 
+        // Pure add
         if (!aNode && bNode) {
             children.push(markSubtree(bNode, "added", i));
             continue;
         }
 
+        // Pure remove
         if (aNode && !bNode) {
             children.push(markSubtree(aNode, "removed", i));
             continue;
@@ -63,20 +71,24 @@ function diffRoot(a: WysiwygNode, b: WysiwygNode): WysiwygNode {
 
         if (!aNode || !bNode) continue;
 
+        // Both present, try structural diff
         if (isListNode(aNode) && isListNode(bNode)) {
             children.push(diffList(aNode, bNode));
         } else if (isBlockNode(aNode) && isBlockNode(bNode) && aNode.tag === bNode.tag) {
             children.push(diffBlock(aNode, bNode, i));
         } else {
-            // Different kinds → treat as removed then added
-            children.push(markSubtree(aNode, "removed", i));
-            children.push(markSubtree(bNode, "added", i));
+            // HYBRID FALLBACK:
+            // Different types or mismatched tags -> do a text-only diff of both nodes.
+            children.push(diffFallbackBlock(aNode, bNode, i));
         }
     }
 
     return { type: "root", children };
 }
 
+/**
+ * Diff between two lists (<ul>/<ol>).
+ */
 function diffList(a: WysiwygNode, b: WysiwygNode): WysiwygNode {
     if (!isListNode(a) || !isListNode(b)) return b;
 
@@ -90,7 +102,7 @@ function diffList(a: WysiwygNode, b: WysiwygNode): WysiwygNode {
 
         // Added li
         if (!aNode && bNode && isLiNode(bNode)) {
-            const text = bNode.inlineParts.map((p) => p.value).join("");
+            const text = getNodeText(bNode);
             children.push({
                 type: "li",
                 id,
@@ -102,7 +114,7 @@ function diffList(a: WysiwygNode, b: WysiwygNode): WysiwygNode {
 
         // Removed li
         if (aNode && !bNode && isLiNode(aNode)) {
-            const text = aNode.inlineParts.map((p) => p.value).join("");
+            const text = getNodeText(aNode);
             children.push({
                 type: "li",
                 id,
@@ -112,10 +124,10 @@ function diffList(a: WysiwygNode, b: WysiwygNode): WysiwygNode {
             continue;
         }
 
-        // Both present → inline diff
+        // Both present -> inline diff
         if (aNode && bNode && isLiNode(aNode) && isLiNode(bNode)) {
-            const originalText = aNode.inlineParts.map((p) => p.value).join("");
-            const modifiedText = bNode.inlineParts.map((p) => p.value).join("");
+            const originalText = getNodeText(aNode);
+            const modifiedText = getNodeText(bNode);
 
             const parts = diffWords(originalText, modifiedText) as InlinePart[];
             const changed = parts.some((p) => p.added || p.removed);
@@ -136,13 +148,16 @@ function diffList(a: WysiwygNode, b: WysiwygNode): WysiwygNode {
     };
 }
 
+/**
+ * Diff between two blocks (<p>/<h2>) of same tag.
+ */
 function diffBlock(
     a: Extract<WysiwygNode, { type: "block" }>,
     b: Extract<WysiwygNode, { type: "block" }>,
     index: number
 ): WysiwygNode {
-    const originalText = a.inlineParts.map((p) => p.value).join("");
-    const modifiedText = b.inlineParts.map((p) => p.value).join("");
+    const originalText = getNodeText(a);
+    const modifiedText = getNodeText(b);
 
     const parts = diffWords(originalText, modifiedText) as InlinePart[];
     const changed = parts.some((p) => p.added || p.removed);
@@ -157,6 +172,44 @@ function diffBlock(
     };
 }
 
+/**
+ * HYBRID FALLBACK:
+ * When two nodes cannot be structurally diffed (e.g. <p> vs <ul> or <h2> vs <p>),
+ * we treat them as a single logical block and run diffWords on their flattened text.
+ */
+function diffFallbackBlock(
+    a: WysiwygNode,
+    b: WysiwygNode,
+    index: number
+): WysiwygNode {
+    const originalText = getNodeText(a);
+    const modifiedText = getNodeText(b);
+
+    const parts = diffWords(originalText, modifiedText) as InlinePart[];
+    const changed = parts.some((p) => p.added || p.removed);
+    const status: LiStatus = changed ? "changed" : "unchanged";
+
+    // Prefer the tag of the "new" node if it is a block;
+    // otherwise default to a <p>-like block.
+    let tag: "p" | "h2" = "p";
+    if (isBlockNode(b)) {
+        tag = b.tag;
+    } else if (isBlockNode(a)) {
+        tag = a.tag;
+    }
+
+    return {
+        type: "block",
+        tag,
+        id: `fallback-${index}`,
+        status,
+        inlineParts: parts,
+    };
+}
+
+/**
+ * Mark an entire subtree as added or removed.
+ */
 function markSubtree(
     node: WysiwygNode,
     mode: "added" | "removed",
@@ -170,7 +223,7 @@ function markSubtree(
     }
 
     if (isLiNode(node)) {
-        const text = node.inlineParts.map((p) => p.value).join("");
+        const text = getNodeText(node);
         const part: InlinePart = { value: text };
         if (mode === "added") part.added = true;
         else part.removed = true;
@@ -184,7 +237,7 @@ function markSubtree(
     }
 
     if (isBlockNode(node)) {
-        const text = node.inlineParts.map((p) => p.value).join("");
+        const text = getNodeText(node);
         const part: InlinePart = { value: text };
         if (mode === "added") part.added = true;
         else part.removed = true;
@@ -200,4 +253,29 @@ function markSubtree(
 
     // root shouldn't reach here, but return as-is
     return node;
+}
+
+/**
+ * Helper: flatten text for any supported node type.
+ */
+function getNodeText(node: WysiwygNode): string {
+    if (isLiNode(node) || isBlockNode(node)) {
+        return node.inlineParts.map((p) => p.value).join("");
+    }
+
+    if (isListNode(node)) {
+        return node.children
+            .map((child) => getNodeText(child))
+            .filter(Boolean)
+            .join(" ");
+    }
+
+    if (isRootNode(node)) {
+        return node.children
+            .map((child) => getNodeText(child))
+            .filter(Boolean)
+            .join(" ");
+    }
+
+    return "";
 }

@@ -101,4 +101,44 @@ export const examples: HtmlDiffExample[] = [
 </ol>
 `,
   },
+
+  {
+    id: "nested-structure",
+    label: "Nested HTML structures",
+    original: `
+    <div>
+      <h2>Safety</h2>
+      <p><strong>Workers</strong> must wear PPE.</p>
+      <ul>
+        <li>Hard hat</li>
+        <li>Goggles</li>
+      </ul>
+    </div>
+  `,
+    modified: `
+    <div>
+      <h2>Safety requirements</h2>
+      <p><strong>All workers</strong> must wear PPE at all times.</p>
+      <ul>
+        <li>Hard hat (Class E or G)</li>
+        <li>Goggles (Anti-fog)</li>
+      </ul>
+    </div>
+  `,
+  },
+
+  {
+    id: "p-to-list",
+    label: "Paragraph vs list (hybrid diff test)",
+    original: `
+    <p>Safety equipment required: Hard hat, goggles, boots.</p>
+  `,
+    modified: `
+    <ul>
+      <li>Hard hat</li>
+      <li>Goggles</li>
+      <li>Boots</li>
+    </ul>
+  `,
+  },
 ];
