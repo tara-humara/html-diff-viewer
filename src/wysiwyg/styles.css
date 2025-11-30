@@ -1,4 +1,8 @@
-/* src/wysiwyg/styles.css */
+/* ==============================
+   Design tokens reuse
+   ============================== */
+
+/* (Relies on the same :root tokens declared in review.css) */
 
 /* ------------------------------
    Base Container
@@ -7,9 +11,9 @@
 .wysiwyg-container {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
         sans-serif;
-    background: #ffffff;
+    background: var(--color-panel-bg);
     border-radius: 6px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-panel-border);
     padding: 12px 16px;
 }
 
@@ -94,20 +98,20 @@
 /* Decision states */
 
 .li-accepted {
-    box-shadow: inset 2px 0 0 #16a34a;
+    box-shadow: inset 2px 0 0 var(--color-accept);
 }
 
 .li-rejected {
-    box-shadow: inset 2px 0 0 #dc2626;
+    box-shadow: inset 2px 0 0 var(--color-reject);
     opacity: 0.85;
 }
 
 /* Active item from keyboard (J/K) */
 
 .li-active {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
-    background-color: rgba(59, 130, 246, 0.06);
+    background-color: rgba(30, 77, 106, 0.05);
 }
 
 /* ------------------------------
@@ -134,8 +138,8 @@
     font-size: 11px;
     padding: 2px 6px;
     border-radius: 999px;
-    border: 1px solid #d1d5db;
-    background: #f9fafb;
+    border: 1px solid var(--color-panel-border-subtle);
+    background: var(--color-chip-bg);
     cursor: pointer;
     transition: background-color 0.15s ease, border-color 0.15s ease,
         color 0.15s ease;
@@ -146,19 +150,19 @@
 }
 
 .li-btn-accept {
-    border-color: #16a34a;
+    border-color: var(--color-accept);
     color: #166534;
 }
 
 .li-btn-reject {
-    border-color: #dc2626;
+    border-color: var(--color-reject);
     color: #b91c1c;
 }
 
 .li-btn-active {
-    background: #111827;
+    background: var(--color-text-main);
     color: #f9fafb;
-    border-color: #111827;
+    border-color: var(--color-text-main);
 }
 
 /* ------------------------------
@@ -181,11 +185,13 @@
 /* Accept pulse */
 @keyframes wysiwyg-accept-pulse {
     0% {
-        box-shadow: inset 2px 0 0 #16a34a, 0 0 0 0 rgba(34, 197, 94, 0.6);
+        box-shadow: inset 2px 0 0 var(--color-accept),
+            0 0 0 0 rgba(34, 197, 94, 0.6);
     }
 
     100% {
-        box-shadow: inset 2px 0 0 #16a34a, 0 0 0 8px rgba(34, 197, 94, 0);
+        box-shadow: inset 2px 0 0 var(--color-accept),
+            0 0 0 8px rgba(34, 197, 94, 0);
     }
 }
 
@@ -196,11 +202,13 @@
 /* Reject pulse */
 @keyframes wysiwyg-reject-pulse {
     0% {
-        box-shadow: inset 2px 0 0 #dc2626, 0 0 0 0 rgba(239, 68, 68, 0.6);
+        box-shadow: inset 2px 0 0 var(--color-reject),
+            0 0 0 0 rgba(239, 68, 68, 0.6);
     }
 
     100% {
-        box-shadow: inset 2px 0 0 #dc2626, 0 0 0 8px rgba(239, 68, 68, 0);
+        box-shadow: inset 2px 0 0 var(--color-reject),
+            0 0 0 8px rgba(239, 68, 68, 0);
     }
 }
 
@@ -221,6 +229,7 @@
     padding: 10px 14px;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    color: var(--color-text-main);
 }
 
 .wysiwyg-stats {
@@ -265,8 +274,8 @@
 }
 
 .wysiwyg-btn.next {
-    border-color: #3b82f6;
-    color: #1d4ed8;
+    border-color: var(--color-focus);
+    color: var(--color-focus);
 }
 
 .wysiwyg-btn.accept {
@@ -315,8 +324,7 @@
     right: 4px;
     bottom: 8px;
     width: 10px;
-    background: #e5e7eb;
-    /* gray-200 */
+    background: var(--color-minimap-rail);
     border-radius: 9999px;
 }
 
@@ -330,33 +338,28 @@
     cursor: pointer;
     opacity: 0.75;
 
-    /* keep dots cleanly inside the rail */
     border: none;
     padding: 0;
 }
 
 /* dot colours */
 .wysiwyg-minimap__dot--pending {
-    background: #9ca3af;
-    /* gray */
+    background: var(--color-minimap-dot);
 }
 
 .wysiwyg-minimap__dot--accepted {
     background: #10b981;
-    /* green */
 }
 
 .wysiwyg-minimap__dot--rejected {
     background: #ef4444;
-    /* red */
 }
 
 /* currently active / focused */
 .wysiwyg-minimap__dot--active {
     height: 8px;
     opacity: 1;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.7);
-    /* blue ring */
+    box-shadow: 0 0 0 2px rgba(30, 77, 106, 0.7);
 }
 
 /* resolved nodes: no rails, no inline colors */
@@ -367,7 +370,6 @@
     position: relative;
 }
 
-/* make sure any legacy inline spans inside resolved HTML look neutral */
 .li-resolved .inline-added,
 .li-resolved .inline-removed {
     background: transparent;
@@ -375,24 +377,24 @@
     color: inherit;
 }
 
-/* tiny status chip on the right (optional) */
+/* tiny status chip (if used) */
 .li-status-chip {
     font-size: 11px;
     padding: 2px 6px;
     border-radius: 999px;
-    border: 1px solid #e5e7eb;
-    background: #f9fafb;
+    border: 1px solid var(--color-chip-border);
+    background: var(--color-chip-bg);
 }
 
 .li-status-chip--accepted {
-    border-color: #16a34a;
-    background: #ecfdf3;
+    border-color: var(--color-accept);
+    background: var(--color-accept-soft);
     color: #166534;
 }
 
 .li-status-chip--rejected {
-    border-color: #dc2626;
-    background: #fef2f2;
+    border-color: var(--color-reject);
+    background: var(--color-reject-soft);
     color: #b91c1c;
 }
 
@@ -411,8 +413,8 @@
 }
 
 .wysiwyg-banner--success {
-    background: #ecfdf3;
-    border: 1px solid #16a34a;
+    background: var(--color-accept-soft);
+    border: 1px solid var(--color-accept);
     color: #166534;
 }
 
@@ -429,37 +431,13 @@
 }
 
 .wysiwyg-btn--active {
-    background: #111827;
+    background: var(--color-text-main);
     color: #f9fafb;
-    border-color: #111827;
+    border-color: var(--color-text-main);
 }
 
 .wysiwyg-actions-divider {
     width: 1px;
     height: 18px;
     background: #e5e7eb;
-}
-
-/* ------------------------------
-   Review complete banner
------------------------------- */
-
-.wysiwyg-banner {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 12px;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 13px;
-}
-
-.wysiwyg-banner--success {
-    background: #ecfdf3;
-    border: 1px solid #16a34a;
-    color: #166534;
-}
-
-.wysiwyg-banner__icon {
-    font-size: 16px;
 }
