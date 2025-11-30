@@ -79,8 +79,9 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             return;
         }
 
-        if (activeIndex === null) setActiveIndex(0);
-        else if (activeIndex >= interactiveIds.length) {
+        if (activeIndex === null) {
+            setActiveIndex(0);
+        } else if (activeIndex >= interactiveIds.length) {
             setActiveIndex(interactiveIds.length - 1);
         }
     }, [interactiveIds, activeIndex]);
@@ -96,7 +97,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         }
     }, [activeIndex, interactiveIds]);
 
-    // Decision handlers
+    // Decision helpers
     const setDecision = (id: string, value: Decision) => {
         setDecisions((prev) => ({ ...prev, [id]: value }));
     };
@@ -193,6 +194,23 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             return <span key={idx}>{p.value}</span>;
         });
 
+    // Build original / modified text from diff parts
+    const buildTextFromParts = (
+        parts: InlinePart[],
+        mode: "original" | "modified"
+    ) => {
+        return parts
+            .map((p) => {
+                if (mode === "original") {
+                    // original text = unchanged + removed segments (skip added-only)
+                    return p.added ? "" : p.value;
+                }
+                // modified text = unchanged + added segments (skip removed-only)
+                return p.removed ? "" : p.value;
+            })
+            .join("");
+    };
+
     const renderNode = (node: WysiwygNode): React.ReactNode => {
         if (node.type === "root") {
             return (
@@ -220,13 +238,73 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             const isActive = activeIndex === idx;
             const decision = decisions[node.id];
 
-            let itemClass = `li-${node.status}`;
-            if (decision === "accept") itemClass += " li-accepted";
-            else if (decision === "reject") itemClass += " li-rejected";
-            if (isActive) itemClass += " li-active";
-
             const WrapperTag: any = node.type === "block" ? "div" : "li";
             const ContentTag: any = node.type === "block" ? node.tag : "span";
+
+            // --- Resolved state: show final text with no diff colours ---
+            if (decision === "accept" || decision === "reject") {
+                const finalText =
+                    decision === "accept"
+                        ? buildTextFromParts(node.inlineParts, "modified")
+                        : buildTextFromParts(node.inlineParts, "original");
+
+                let wrapperClass = "li-resolved";
+                if (isActive) wrapperClass += " li-active";
+
+                return (
+                    <WrapperTag
+                        className={wrapperClass}
+                        ref={(el: HTMLElement | null) => {
+                            nodeRefs.current[node.id] = el;
+                        }}
+                        onClick={() => setActiveIndex(idx)}
+                    >
+                        <div className="li-content-row">
+                            <ContentTag className="li-resolved-html">
+                                {finalText}
+                            </ContentTag>
+                            <span className="li-actions">
+                                <button
+                                    type="button"
+                                    className={
+                                        "li-btn li-btn-accept" +
+                                        (decision === "accept" ? " li-btn-active" : "")
+                                    }
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDecision(
+                                            node.id,
+                                            decision === "accept" ? undefined : "accept"
+                                        );
+                                    }}
+                                >
+                                    Accept
+                                </button>
+                                <button
+                                    type="button"
+                                    className={
+                                        "li-btn li-btn-reject" +
+                                        (decision === "reject" ? " li-btn-active" : "")
+                                    }
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDecision(
+                                            node.id,
+                                            decision === "reject" ? undefined : "reject"
+                                        );
+                                    }}
+                                >
+                                    Reject
+                                </button>
+                            </span>
+                        </div>
+                    </WrapperTag>
+                );
+            }
+
+            // --- Pending state: show full diff with rails + inline highlights ---
+            let itemClass = `li-${node.status}`;
+            if (isActive) itemClass += " li-active";
 
             return (
                 <WrapperTag
@@ -287,9 +365,15 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             <div className="wysiwyg-toolbar">
                 <div className="wysiwyg-stats">
                     <span className="pill">Total: {stats.total}</span>
-                    <span className="pill pill-accepted">Accepted: {stats.accepted}</span>
-                    <span className="pill pill-rejected">Rejected: {stats.rejected}</span>
-                    <span className="pill pill-pending">Pending: {stats.pending}</span>
+                    <span className="pill pill-accepted">
+                        Accepted: {stats.accepted}
+                    </span>
+                    <span className="pill pill-rejected">
+                        Rejected: {stats.rejected}
+                    </span>
+                    <span className="pill pill-pending">
+                        Pending: {stats.pending}
+                    </span>
                 </div>
 
                 <div className="wysiwyg-actions">

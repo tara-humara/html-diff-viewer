@@ -358,3 +358,40 @@
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.7);
     /* blue ring */
 }
+
+/* resolved nodes: no rails, no inline colors */
+
+.li-resolved {
+    padding-left: 0;
+    /* no rail */
+    position: relative;
+}
+
+/* make sure any legacy inline spans inside resolved HTML look neutral */
+.li-resolved .inline-added,
+.li-resolved .inline-removed {
+    background: transparent;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* tiny status chip on the right (optional) */
+.li-status-chip {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.li-status-chip--accepted {
+    border-color: #16a34a;
+    background: #ecfdf3;
+    color: #166534;
+}
+
+.li-status-chip--rejected {
+    border-color: #dc2626;
+    background: #fef2f2;
+    color: #b91c1c;
+}
