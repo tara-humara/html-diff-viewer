@@ -7,7 +7,51 @@ import { ReviewableDiff } from "./components/ReviewableDiff";
 import { WysiwygDiff } from "./wysiwyg/WysiwygDiff";
 import { examples } from "./examples";
 
+// Small pill showing "Step X"
+const StepPill: React.FC<{ step: number }> = ({ step }) => (
+  <span
+    style={{
+      background: "#0b2e4e22",
+      color: "#0b2e4e",
+      fontSize: "11px",
+      fontWeight: 600,
+      padding: "2px 6px",
+      borderRadius: "999px",
+      marginRight: "8px",
+      textTransform: "uppercase",
+      letterSpacing: "0.04em",
+    }}
+  >
+    Step {step}
+  </span>
+);
+
+// Section title with pill + title text
+const SectionTitle: React.FC<{ step: number; title: string }> = ({
+  step,
+  title,
+}) => (
+  <div style={{ display: "flex", alignItems: "center", marginBottom: "6px" }}>
+    <StepPill step={step} />
+    <h2
+      style={{
+        fontSize: "18px",
+        fontWeight: 700,
+        color: "#0b2e4e",
+        margin: 0,
+      }}
+    >
+      {title}
+    </h2>
+  </div>
+);
+
 const App: React.FC = () => {
+  // Disable browser scroll restoration globally for this SPA
+  if ("scrollRestoration" in window.history) {
+    window.history.scrollRestoration = "manual";
+  }
+
   const [mode, setMode] = useState<DiffMode>("words");
   const [selectedExampleId, setSelectedExampleId] = useState<string>(
     examples[0]?.id ?? ""
@@ -16,9 +60,14 @@ const App: React.FC = () => {
   const selectedExample =
     examples.find((ex) => ex.id === selectedExampleId) ?? examples[0];
 
-  // Make sure the page starts at the top on load
+  // Always start at the very top when the app mounts
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Run after React paints
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
   }, []);
 
   return (
@@ -44,6 +93,7 @@ const App: React.FC = () => {
               fontSize: "26px",
               marginBottom: "8px",
               color: "#0b2e4e",
+              fontWeight: 700,
             }}
           >
             HTML review workspace
@@ -51,7 +101,7 @@ const App: React.FC = () => {
           <p
             style={{
               marginBottom: "14px",
-              color: "#4b5563",
+              color: "#6b7280",
               fontSize: "14px",
             }}
           >
@@ -69,7 +119,13 @@ const App: React.FC = () => {
             }}
           >
             {/* Example selector */}
-            <label style={{ fontSize: "14px", color: "#374151" }}>
+            <label
+              style={{
+                fontSize: "14px",
+                color: "#374151",
+                fontWeight: 500,
+              }}
+            >
               Example:{" "}
               <select
                 value={selectedExample.id}
@@ -90,7 +146,13 @@ const App: React.FC = () => {
             </label>
 
             {/* Diff granularity */}
-            <label style={{ fontSize: "14px", color: "#374151" }}>
+            <label
+              style={{
+                fontSize: "14px",
+                color: "#374151",
+                fontWeight: 500,
+              }}
+            >
               Diff granularity (text diff):{" "}
               <select
                 value={mode}
@@ -163,16 +225,7 @@ const App: React.FC = () => {
               boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
             }}
           >
-            <h2
-              style={{
-                fontSize: "16px",
-                fontWeight: 600,
-                marginBottom: "4px",
-                color: "#0b2e4e",
-              }}
-            >
-              1. Review suggestions (raw HTML)
-            </h2>
+            <SectionTitle step={1} title="Review suggestions (raw HTML)" />
             <p
               style={{
                 fontSize: "13px",
@@ -200,16 +253,7 @@ const App: React.FC = () => {
               boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
             }}
           >
-            <h2
-              style={{
-                fontSize: "16px",
-                fontWeight: 600,
-                marginBottom: "4px",
-                color: "#0b2e4e",
-              }}
-            >
-              2. Visual HTML (WYSIWYG)
-            </h2>
+            <SectionTitle step={2} title="Visual HTML (WYSIWYG)" />
             <p
               style={{
                 fontSize: "13px",
@@ -245,9 +289,13 @@ const App: React.FC = () => {
                 fontWeight: 600,
                 color: "#0b2e4e",
                 marginBottom: "4px",
+                display: "flex",
+                alignItems: "center",
+                listStyle: "none",
               }}
             >
-              Advanced: unified text diff
+              <StepPill step={3} />
+              <span>Advanced: unified text diff</span>
             </summary>
             <p
               style={{
@@ -284,9 +332,13 @@ const App: React.FC = () => {
                 fontWeight: 600,
                 color: "#0b2e4e",
                 marginBottom: "4px",
+                display: "flex",
+                alignItems: "center",
+                listStyle: "none",
               }}
             >
-              Advanced: side-by-side text diff
+              <StepPill step={4} />
+              <span>Advanced: side-by-side text diff</span>
             </summary>
             <p
               style={{

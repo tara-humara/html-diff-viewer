@@ -13,6 +13,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Prevent Chrome from trying to anchor scroll position */
+html {
+  overflow-anchor: none;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -29,14 +34,13 @@ body {
   min-width: 320px;
   min-height: 100vh;
   display: block;
-  /* important — remove flex */
 }
 
+/* Let document height be natural, no forced height:100% */
 html,
 body,
 #root {
   width: 100%;
-  height: 100%;
 }
 
 h1 {
