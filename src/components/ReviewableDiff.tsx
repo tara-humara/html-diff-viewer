@@ -16,10 +16,11 @@ type ChangeInlineProps = {
     decision: boolean | undefined;
     onDecision: (value: boolean) => void;
     isActive: boolean;
+    onActivate: () => void;
 };
 
 const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
-    ({ change, decision, onDecision, isActive }, ref) => {
+    ({ change, decision, onDecision, isActive, onActivate }, ref) => {
         const bubbleKindClass = `change-inline__bubble change-inline__bubble--${change.type}`;
         const containerClass =
             "change-inline" +
@@ -34,7 +35,11 @@ const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
         const rejectActive = decision === false;
 
         return (
-            <span ref={ref} className={containerClass}>
+            <span
+                ref={ref}
+                className={containerClass}
+                onClick={() => onActivate()}
+            >
                 <span className={bubbleKindClass}>
                     {/* visible bubble content */}
                     {change.type !== "add" && change.original && (
@@ -58,7 +63,10 @@ const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
                         {change.type === "remove" && `Remove:\n- ${change.original}`}
                     </span>
                 </span>
-                <span className="change-inline__actions">
+                <span
+                    className="change-inline__actions"
+                    onClick={(e) => e.stopPropagation()} // don't re-trigger onActivate when clicking buttons
+                >
                     <button
                         type="button"
                         className={
@@ -216,6 +224,22 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
         }
     };
 
+    const jumpToNextPending = () => {
+        if (changes.length === 0 || stats.pending === 0) return;
+
+        const len = changes.length;
+        const start = activeIndex ?? -1;
+
+        for (let offset = 1; offset <= len; offset++) {
+            const idx = (start + offset) % len;
+            const change = changes[idx];
+            if (decisions[change.id] === undefined) {
+                setActiveIndex(idx);
+                break;
+            }
+        }
+    };
+
     // Keyboard shortcuts: J/K/A/R
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -308,6 +332,14 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                     <div className="review-bulk-actions">
                         <button
                             type="button"
+                            className="review-bulk-btn review-bulk-btn--next"
+                            onClick={jumpToNextPending}
+                            disabled={stats.pending === 0}
+                        >
+                            Next pending
+                        </button>
+                        <button
+                            type="button"
                             className="review-bulk-btn review-bulk-btn--accept"
                             onClick={() => handleBulk(true)}
                             disabled={changes.length === 0}
@@ -363,6 +395,7 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                                 change={change}
                                 decision={decision}
                                 isActive={activeIndex === changeIdx}
+                                onActivate={() => setActiveIndex(changeIdx)}
                                 onDecision={(v) => handleDecision(change.id, v)}
                             />
                         );

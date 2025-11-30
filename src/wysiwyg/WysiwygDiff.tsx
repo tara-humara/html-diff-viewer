@@ -1,4 +1,6 @@
-// src/wysiwyg/WysiwygDiff.tsx
+// --- FULL UPDATED FILE ---
+// (Copy & paste into src/wysiwyg/WysiwygDiff.tsx)
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { diffHtmlTrees } from "./diff";
 import type { WysiwygNode, InlinePart } from "./types";
@@ -51,21 +53,35 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         return map;
     }, [interactiveIds]);
 
-    // Refs to scroll active node into view
+    // Refs for scroll-to-active
     const nodeRefs = useRef<Record<string, HTMLElement | null>>({});
 
-    // Ensure we always have a valid activeIndex when there are interactive ids
+    // Stats
+    const stats = useMemo(() => {
+        const total = interactiveIds.length;
+        let accepted = 0;
+        let rejected = 0;
+
+        interactiveIds.forEach((id) => {
+            const d = decisions[id];
+            if (d === "accept") accepted++;
+            else if (d === "reject") rejected++;
+        });
+
+        const pending = total - accepted - rejected;
+        return { total, accepted, rejected, pending };
+    }, [interactiveIds, decisions]);
+
+    // Ensure activeIndex is valid
     useEffect(() => {
         if (interactiveIds.length === 0) {
             if (activeIndex !== null) setActiveIndex(null);
             return;
         }
 
-        if (activeIndex === null) {
-            setActiveIndex(0);
-        } else if (activeIndex >= interactiveIds.length) {
+        if (activeIndex === null) setActiveIndex(0);
+        else if (activeIndex >= interactiveIds.length)
             setActiveIndex(interactiveIds.length - 1);
-        }
     }, [interactiveIds, activeIndex]);
 
     // Scroll active node into view
@@ -74,194 +90,47 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         const id = interactiveIds[activeIndex];
         if (!id) return;
         const el = nodeRefs.current[id];
-        if (el) {
-            el.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }, [activeIndex, interactiveIds]);
 
-    if (!tree) {
-        return (
-            <div className="wysiwyg-container">
-                No supported HTML blocks found in this example.
-            </div>
-        );
-    }
-
-    const handleDecision = (id: string, value: Decision) => {
+    // Decision handlers
+    const setDecision = (id: string, value: Decision) => {
         setDecisions((prev) => ({ ...prev, [id]: value }));
     };
 
-    const renderInlineParts = (parts: InlinePart[]) => {
-        return parts.map((p, idx) => {
-            if (p.added) {
-                return (
-                    <span key={idx} className="inline-added">
-                        {p.value}
-                    </span>
-                );
-            }
-            if (p.removed) {
-                return (
-                    <span key={idx} className="inline-removed">
-                        {p.value}
-                    </span>
-                );
-            }
-            return <span key={idx}>{p.value}</span>;
+    const handleBulk = (mode: "accept" | "reject") => {
+        setDecisions(() => {
+            const out: Decisions = {};
+            interactiveIds.forEach((id) => {
+                out[id] = mode;
+            });
+            return out;
         });
     };
 
-    const renderNode = (node: WysiwygNode): React.ReactNode => {
-        if (node.type === "root") {
-            return (
-                <>
-                    {node.children.map((child, idx) => (
-                        <React.Fragment key={idx}>{renderNode(child)}</React.Fragment>
-                    ))}
-                </>
-            );
-        }
-
-        if (node.type === "ul" || node.type === "ol") {
-            const Tag = node.type;
-            return (
-                <Tag>
-                    {node.children.map((child, idx) => (
-                        <React.Fragment
-                            key={
-                                child.type === "li" || child.type === "block" ? child.id : idx
-                            }
-                        >
-                            {renderNode(child)}
-                        </React.Fragment>
-                    ))}
-                </Tag>
-            );
-        }
-
-        if (node.type === "li") {
-            const decision = decisions[node.id];
-            const idx = idToIndex[node.id] ?? 0;
-            const isActive = activeIndex === idx;
-
-            let itemClass = `li-${node.status}`;
-            if (decision === "accept") itemClass += " li-accepted";
-            else if (decision === "reject") itemClass += " li-rejected";
-            if (isActive) itemClass += " li-active";
-
-            return (
-                <li
-                    className={itemClass}
-                    ref={(el) => {
-                        nodeRefs.current[node.id] = el;
-                    }}
-                >
-                    <div className="li-content-row">
-                        <span>{renderInlineParts(node.inlineParts)}</span>
-
-                        <span className="li-actions">
-                            <button
-                                type="button"
-                                className={
-                                    "li-btn li-btn-accept" +
-                                    (decision === "accept" ? " li-btn-active" : "")
-                                }
-                                onClick={() =>
-                                    handleDecision(
-                                        node.id,
-                                        decision === "accept" ? undefined : "accept"
-                                    )
-                                }
-                            >
-                                Accept
-                            </button>
-                            <button
-                                type="button"
-                                className={
-                                    "li-btn li-btn-reject" +
-                                    (decision === "reject" ? " li-btn-active" : "")
-                                }
-                                onClick={() =>
-                                    handleDecision(
-                                        node.id,
-                                        decision === "reject" ? undefined : "reject"
-                                    )
-                                }
-                            >
-                                Reject
-                            </button>
-                        </span>
-                    </div>
-                </li>
-            );
-        }
-
-        if (node.type === "block") {
-            const decision = decisions[node.id];
-            const idx = idToIndex[node.id] ?? 0;
-            const isActive = activeIndex === idx;
-
-            let itemClass = `li-${node.status}`;
-            if (decision === "accept") itemClass += " li-accepted";
-            else if (decision === "reject") itemClass += " li-rejected";
-            if (isActive) itemClass += " li-active";
-
-            const Tag: any = node.tag; // "p" or "h2"
-
-            return (
-                <div
-                    className={itemClass}
-                    ref={(el) => {
-                        nodeRefs.current[node.id] = el;
-                    }}
-                >
-                    <div className="li-content-row">
-                        <Tag>{renderInlineParts(node.inlineParts)}</Tag>
-
-                        <span className="li-actions">
-                            <button
-                                type="button"
-                                className={
-                                    "li-btn li-btn-accept" +
-                                    (decision === "accept" ? " li-btn-active" : "")
-                                }
-                                onClick={() =>
-                                    handleDecision(
-                                        node.id,
-                                        decision === "accept" ? undefined : "accept"
-                                    )
-                                }
-                            >
-                                Accept
-                            </button>
-                            <button
-                                type="button"
-                                className={
-                                    "li-btn li-btn-reject" +
-                                    (decision === "reject" ? " li-btn-active" : "")
-                                }
-                                onClick={() =>
-                                    handleDecision(
-                                        node.id,
-                                        decision === "reject" ? undefined : "reject"
-                                    )
-                                }
-                            >
-                                Reject
-                            </button>
-                        </span>
-                    </div>
-                </div>
-            );
-        }
-
-        return null;
+    const handleReset = () => {
+        setDecisions({});
     };
 
-    // Keyboard shortcuts: J/K/A/R
+    const jumpToNextPending = () => {
+        if (stats.pending === 0) return;
+
+        const len = interactiveIds.length;
+        const start = activeIndex ?? -1;
+
+        for (let offset = 1; offset <= len; offset++) {
+            const idx = (start + offset) % len;
+            const id = interactiveIds[idx];
+            if (decisions[id] === undefined) {
+                setActiveIndex(idx);
+                return;
+            }
+        }
+    };
+
+    // Keyboard shortcuts J/K/A/R
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            // Ignore when typing in inputs/textareas/contentEditable
             const target = e.target as HTMLElement | null;
             if (
                 target &&
@@ -279,45 +148,23 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             if (key === "j") {
                 e.preventDefault();
                 setActiveIndex((prev) => {
-                    const len = interactiveIds.length;
-                    if (!len) return prev;
                     if (prev === null) return 0;
-                    return (prev + 1) % len;
+                    return (prev + 1) % interactiveIds.length;
                 });
             } else if (key === "k") {
                 e.preventDefault();
                 setActiveIndex((prev) => {
-                    const len = interactiveIds.length;
-                    if (!len) return prev;
-                    if (prev === null) return len - 1;
-                    return (prev - 1 + len) % len;
+                    if (prev === null) return interactiveIds.length - 1;
+                    return (prev - 1 + interactiveIds.length) % interactiveIds.length;
                 });
             } else if (key === "a") {
                 e.preventDefault();
-                setDecisions((prev) => {
-                    const len = interactiveIds.length;
-                    if (!len) return prev;
-                    const idx = activeIndex ?? 0;
-                    const id = interactiveIds[idx];
-                    if (!id) return prev;
-                    return { ...prev, [id]: "accept" };
-                });
-                if (activeIndex === null && interactiveIds.length > 0) {
-                    setActiveIndex(0);
-                }
+                if (activeIndex === null) return;
+                setDecision(interactiveIds[activeIndex], "accept");
             } else if (key === "r") {
                 e.preventDefault();
-                setDecisions((prev) => {
-                    const len = interactiveIds.length;
-                    if (!len) return prev;
-                    const idx = activeIndex ?? 0;
-                    const id = interactiveIds[idx];
-                    if (!id) return prev;
-                    return { ...prev, [id]: "reject" };
-                });
-                if (activeIndex === null && interactiveIds.length > 0) {
-                    setActiveIndex(0);
-                }
+                if (activeIndex === null) return;
+                setDecision(interactiveIds[activeIndex], "reject");
             }
         };
 
@@ -325,5 +172,148 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         return () => window.removeEventListener("keydown", handler);
     }, [interactiveIds, activeIndex]);
 
-    return <div className="wysiwyg-container">{renderNode(tree)}</div>;
+    // Render helpers
+    const renderInlineParts = (parts: InlinePart[]) =>
+        parts.map((p, idx) => {
+            if (p.added) return <span key={idx} className="inline-added">{p.value}</span>;
+            if (p.removed)
+                return <span key={idx} className="inline-removed">{p.value}</span>;
+            return <span key={idx}>{p.value}</span>;
+        });
+
+    const renderNode = (node: WysiwygNode): React.ReactNode => {
+        if (node.type === "root") {
+            return (
+                <>
+                    {node.children.map((child, i) => (
+                        <React.Fragment key={i}>{renderNode(child)}</React.Fragment>
+                    ))}
+                </>
+            );
+        }
+
+        if (node.type === "ul" || node.type === "ol") {
+            const Tag = node.type;
+            return (
+                <Tag>
+                    {node.children.map((child, i) => (
+                        <React.Fragment key={i}>{renderNode(child)}</React.Fragment>
+                    ))}
+                </Tag>
+            );
+        }
+
+        if (node.type === "li" || node.type === "block") {
+            const idx = idToIndex[node.id] ?? 0;
+            const isActive = activeIndex === idx;
+            const decision = decisions[node.id];
+
+            let itemClass = `li-${node.status}`;
+            if (decision === "accept") itemClass += " li-accepted";
+            else if (decision === "reject") itemClass += " li-rejected";
+            if (isActive) itemClass += " li-active";
+
+            const WrapperTag = node.type === "block" ? "div" : "li";
+            const ContentTag = node.type === "block" ? (node.tag as any) : "span";
+
+            return (
+                <WrapperTag
+                    className={itemClass}
+                    ref={(el: HTMLElement | null) => {
+                        nodeRefs.current[node.id] = el;
+                    }}
+                    onClick={() => setActiveIndex(idx)}
+                >
+                    <div className="li-content-row">
+                        <ContentTag>{renderInlineParts(node.inlineParts)}</ContentTag>
+
+                        <span className="li-actions">
+                            <button
+                                className={
+                                    "li-btn li-btn-accept" +
+                                    (decision === "accept" ? " li-btn-active" : "")
+                                }
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDecision(
+                                        node.id,
+                                        decision === "accept" ? undefined : "accept"
+                                    );
+                                }}
+                            >
+                                Accept
+                            </button>
+                            <button
+                                className={
+                                    "li-btn li-btn-reject" +
+                                    (decision === "reject" ? " li-btn-active" : "")
+                                }
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDecision(
+                                        node.id,
+                                        decision === "reject" ? undefined : "reject"
+                                    );
+                                }}
+                            >
+                                Reject
+                            </button>
+                        </span>
+                    </div>
+                </WrapperTag>
+            );
+        }
+
+        return null;
+    };
+
+    if (!tree) return <div className="wysiwyg-container">No supported HTML.</div>;
+
+    return (
+        <div className="wysiwyg-container">
+            {/* Toolbar */}
+            <div className="wysiwyg-toolbar">
+                <div className="wysiwyg-stats">
+                    <span className="pill">Total: {stats.total}</span>
+                    <span className="pill pill-accepted">Accepted: {stats.accepted}</span>
+                    <span className="pill pill-rejected">Rejected: {stats.rejected}</span>
+                    <span className="pill pill-pending">Pending: {stats.pending}</span>
+                </div>
+
+                <div className="wysiwyg-actions">
+                    <button
+                        className="wysiwyg-btn next"
+                        onClick={jumpToNextPending}
+                        disabled={stats.pending === 0}
+                    >
+                        Next pending
+                    </button>
+                    <button
+                        className="wysiwyg-btn accept"
+                        onClick={() => handleBulk("accept")}
+                        disabled={stats.total === 0}
+                    >
+                        Accept all
+                    </button>
+                    <button
+                        className="wysiwyg-btn reject"
+                        onClick={() => handleBulk("reject")}
+                        disabled={stats.total === 0}
+                    >
+                        Reject all
+                    </button>
+                    <button
+                        className="wysiwyg-btn reset"
+                        onClick={handleReset}
+                        disabled={stats.total === 0}
+                    >
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            {/* Render visual HTML diff */}
+            <div className="wysiwyg-content">{renderNode(tree)}</div>
+        </div>
+    );
 };

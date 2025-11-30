@@ -426,3 +426,13 @@
     outline: 2px solid #3b82f6;
     outline-offset: 2px;
 }
+
+.review-bulk-btn--next {
+    border-color: #3b82f6;
+    color: #1d4ed8;
+}
+
+.review-bulk-btn--next:disabled {
+    opacity: 0.4;
+    cursor: default;
+}

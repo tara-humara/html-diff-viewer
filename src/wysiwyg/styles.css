@@ -205,3 +205,84 @@
     background-color: rgba(59, 130, 246, 0.06);
     /* subtle blue bg */
 }
+
+.wysiwyg-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    background: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.wysiwyg-stats {
+    display: flex;
+    gap: 8px;
+}
+
+.pill {
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #eee;
+    font-size: 12px;
+}
+
+.pill-accepted {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.pill-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.pill-pending {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.wysiwyg-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.wysiwyg-btn {
+    padding: 4px 8px;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background: #fff;
+}
+
+.wysiwyg-btn.next {
+    border-color: #3b82f6;
+    color: #1d4ed8;
+}
+
+.wysiwyg-btn.accept {
+    border-color: #10b981;
+    color: #047857;
+}
+
+.wysiwyg-btn.reject {
+    border-color: #ef4444;
+    color: #b91c1c;
+}
+
+.wysiwyg-btn.reset {
+    border-color: #6b7280;
+    color: #374151;
+}
+
+.wysiwyg-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.wysiwyg-content {
+    padding: 4px;
+}
