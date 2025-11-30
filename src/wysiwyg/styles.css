@@ -29,17 +29,48 @@
    LI Status Styles
 ------------------------------ */
 
-.li-added {
-    background: rgba(34, 197, 94, 0.2);
+/* list items with changes get a subtle left rail instead of full background */
+
+.li-added,
+.li-removed,
+.li-changed {
+    background: transparent;
+    position: relative;
+    padding-left: 10px;
+    /* space for the rail */
+}
+
+/* coloured rail indicating type of change */
+.li-added::before,
+.li-removed::before,
+.li-changed::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    border-radius: 999px;
+}
+
+.li-added::before {
+    background: #22c55e33;
+    /* soft green */
+}
+
+.li-removed::before {
+    background: #ef444433;
+    /* soft red */
+}
+
+.li-changed::before {
+    background: #3b82f633;
+    /* soft blue */
 }
 
 .li-removed {
-    background: rgba(239, 68, 68, 0.2);
     text-decoration: line-through;
-}
-
-.li-changed {
-    background: rgba(59, 130, 246, 0.15);
+    text-decoration-color: #9ca3af;
 }
 
 .li-unchanged {
@@ -49,14 +80,15 @@
 /* Inline highlights */
 
 .inline-added {
-    background: rgba(34, 197, 94, 0.3);
+    background: rgba(34, 197, 94, 0.15);
     padding: 0 2px;
 }
 
 .inline-removed {
-    background: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.15);
     padding: 0 2px;
     text-decoration: line-through;
+    text-decoration-color: #b91c1c;
 }
 
 /* Decision states */

@@ -123,24 +123,19 @@
     gap: 4px;
     padding: 2px 6px;
     border-radius: 999px;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
+    background: #f9fafb;
+    /* neutral background */
+    border: 1px solid #e5e7eb;
+    /* neutral border */
     font-family: Menlo, Monaco, "Courier New", monospace;
 }
 
-.change-inline__bubble--add {
-    background: #ecfdf3;
-    border-color: #bbf7d0;
-}
-
-.change-inline__bubble--remove {
-    background: #fef2f2;
-    border-color: #fecaca;
-}
-
+/* type-of-change variants no longer change the color palette */
+.change-inline__bubble--add,
+.change-inline__bubble--remove,
 .change-inline__bubble--replace {
-    background: #eff6ff;
-    border-color: #bfdbfe;
+    background: inherit;
+    border-color: inherit;
 }
 
 /* State-based styling */
@@ -157,7 +152,13 @@
 
 .change-inline__original {
     text-decoration: line-through;
+    color: #6b7280;
+    /* softer neutral for removed text */
+}
+
+.change-inline--rejected .change-inline__original {
     color: #b91c1c;
+    /* strong red only once rejected */
 }
 
 .change-inline__arrow {
@@ -422,6 +423,7 @@
 }
 
 /* Active change when using keyboard navigation */
+
 .change-inline--active {
     outline: 2px solid #3b82f6;
     outline-offset: 2px;
