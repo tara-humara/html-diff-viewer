@@ -419,3 +419,47 @@
 .wysiwyg-banner__icon {
     font-size: 16px;
 }
+
+/* ------------------------------
+   Mode toggle + divider
+------------------------------ */
+
+.wysiwyg-btn.toggle {
+    font-size: 12px;
+}
+
+.wysiwyg-btn--active {
+    background: #111827;
+    color: #f9fafb;
+    border-color: #111827;
+}
+
+.wysiwyg-actions-divider {
+    width: 1px;
+    height: 18px;
+    background: #e5e7eb;
+}
+
+/* ------------------------------
+   Review complete banner
+------------------------------ */
+
+.wysiwyg-banner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.wysiwyg-banner--success {
+    background: #ecfdf3;
+    border: 1px solid #16a34a;
+    color: #166534;
+}
+
+.wysiwyg-banner__icon {
+    font-size: 16px;
+}

@@ -5,7 +5,6 @@ import type { DiffMode } from "./components/TextDiff";
 import { SideBySideDiff } from "./components/SideBySideDiff";
 import { ReviewableDiff } from "./components/ReviewableDiff";
 import { WysiwygDiff } from "./wysiwyg/WysiwygDiff";
-import { HtmlSideBySide } from "./wysiwyg/HtmlSideBySide";
 import { TimelineDiff } from "./components/TimelineDiff";
 import { examples } from "./examples";
 
@@ -93,7 +92,6 @@ const App: React.FC = () => {
             <option value="side-by-side">Side by side</option>
             <option value="review">Review (accept/reject)</option>
             <option value="wysiwyg">WYSIWYG HTML diff</option>
-            <option value="html-preview">HTML preview (side-by-side)</option>
             <option value="timeline">Timeline</option>
           </select>
         </label>
@@ -180,13 +178,6 @@ const App: React.FC = () => {
 
         {viewMode === "wysiwyg" && (
           <WysiwygDiff
-            original={selectedExample.original}
-            modified={selectedExample.modified}
-          />
-        )}
-
-        {viewMode === "html-preview" && (
-          <HtmlSideBySide
             original={selectedExample.original}
             modified={selectedExample.modified}
           />

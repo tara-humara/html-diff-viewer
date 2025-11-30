@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { diffHtmlTrees } from "./diff";
 import type { WysiwygNode, InlinePart } from "./types";
+import { HtmlSideBySide } from "./HtmlSideBySide";
 import "./styles.css";
 
 export type WysiwygDiffProps = {
@@ -11,6 +12,7 @@ export type WysiwygDiffProps = {
 
 type Decision = "accept" | "reject" | undefined;
 type Decisions = Record<string, Decision>;
+type PanelMode = "review" | "preview";
 
 export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
     original,
@@ -19,6 +21,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
     const tree = diffHtmlTrees(original, modified);
     const [decisions, setDecisions] = useState<Decisions>({});
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
+    const [panelMode, setPanelMode] = useState<PanelMode>("review");
 
     if (!tree) {
         return <div className="wysiwyg-container">No supported HTML.</div>;
@@ -86,8 +89,9 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         }
     }, [interactiveIds, activeIndex]);
 
-    // Scroll active node into view
+    // Scroll active node into view (review mode only)
     useEffect(() => {
+        if (panelMode !== "review") return;
         if (activeIndex === null) return;
         const id = interactiveIds[activeIndex];
         if (!id) return;
@@ -95,7 +99,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         if (el) {
             el.scrollIntoView({ behavior: "smooth", block: "center" });
         }
-    }, [activeIndex, interactiveIds]);
+    }, [activeIndex, interactiveIds, panelMode]);
 
     // Decision helpers
     const setDecision = (id: string, value: Decision) => {
@@ -132,9 +136,11 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         }
     };
 
-    // Keyboard shortcuts J/K/A/R
+    // Keyboard shortcuts J/K/A/R (only in review mode)
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
+            if (panelMode !== "review") return;
+
             const target = e.target as HTMLElement | null;
             if (
                 target &&
@@ -174,7 +180,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-    }, [interactiveIds, activeIndex]);
+    }, [interactiveIds, activeIndex, panelMode]);
 
     // Render helpers
     const renderInlineParts = (parts: InlinePart[]) =>
@@ -377,81 +383,116 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 </div>
 
                 <div className="wysiwyg-actions">
+                    {/* Mode toggle */}
                     <button
-                        className="wysiwyg-btn next"
-                        onClick={jumpToNextPending}
-                        disabled={stats.pending === 0}
+                        className={
+                            "wysiwyg-btn toggle" +
+                            (panelMode === "review" ? " wysiwyg-btn--active" : "")
+                        }
+                        type="button"
+                        onClick={() => setPanelMode("review")}
                     >
-                        Next pending
+                        Review
                     </button>
                     <button
-                        className="wysiwyg-btn accept"
-                        onClick={() => handleBulk("accept")}
-                        disabled={stats.total === 0}
+                        className={
+                            "wysiwyg-btn toggle" +
+                            (panelMode === "preview" ? " wysiwyg-btn--active" : "")
+                        }
+                        type="button"
+                        onClick={() => setPanelMode("preview")}
                     >
-                        Accept all
+                        HTML preview
                     </button>
-                    <button
-                        className="wysiwyg-btn reject"
-                        onClick={() => handleBulk("reject")}
-                        disabled={stats.total === 0}
-                    >
-                        Reject all
-                    </button>
-                    <button
-                        className="wysiwyg-btn reset"
-                        onClick={handleReset}
-                        disabled={stats.total === 0}
-                    >
-                        Reset
-                    </button>
+
+                    {panelMode === "review" && (
+                        <>
+                            <span className="wysiwyg-actions-divider" />
+                            <button
+                                className="wysiwyg-btn next"
+                                onClick={jumpToNextPending}
+                                disabled={stats.pending === 0}
+                            >
+                                Next pending
+                            </button>
+                            <button
+                                className="wysiwyg-btn accept"
+                                onClick={() => handleBulk("accept")}
+                                disabled={stats.total === 0}
+                            >
+                                Accept all
+                            </button>
+                            <button
+                                className="wysiwyg-btn reject"
+                                onClick={() => handleBulk("reject")}
+                                disabled={stats.total === 0}
+                            >
+                                Reject all
+                            </button>
+                            <button
+                                className="wysiwyg-btn reset"
+                                onClick={handleReset}
+                                disabled={stats.total === 0}
+                            >
+                                Reset
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
+            {/* Review complete banner */}
             {stats.pending === 0 && stats.total > 0 && (
                 <div className="wysiwyg-banner wysiwyg-banner--success">
                     <span className="wysiwyg-banner__icon">✔</span>
-                    <span>Review complete: all changes have been accepted or rejected.</span>
+                    <span>
+                        Review complete: all changes have been accepted or rejected.
+                    </span>
                 </div>
             )}
 
-            {/* Content + minimap */}
-            <div className="wysiwyg-content-wrapper">
-                <div className="wysiwyg-content">{renderNode(tree)}</div>
+            {/* Content */}
+            {panelMode === "review" ? (
+                <div className="wysiwyg-content-wrapper">
+                    <div className="wysiwyg-content">{renderNode(tree)}</div>
 
-                {interactiveIds.length > 0 && (
-                    <div className="wysiwyg-minimap">
-                        {interactiveIds.map((id, idx) => {
-                            const decision = decisions[id];
-                            const top = ((idx + 0.5) / interactiveIds.length) * 100;
+                    {interactiveIds.length > 0 && (
+                        <div className="wysiwyg-minimap">
+                            {interactiveIds.map((id, idx) => {
+                                const decision = decisions[id];
+                                const top =
+                                    ((idx + 0.5) / interactiveIds.length) * 100;
 
-                            let dotClass = "wysiwyg-minimap__dot";
-                            if (decision === "accept") {
-                                dotClass += " wysiwyg-minimap__dot--accepted";
-                            } else if (decision === "reject") {
-                                dotClass += " wysiwyg-minimap__dot--rejected";
-                            } else {
-                                dotClass += " wysiwyg-minimap__dot--pending";
-                            }
+                                let dotClass = "wysiwyg-minimap__dot";
+                                if (decision === "accept") {
+                                    dotClass += " wysiwyg-minimap__dot--accepted";
+                                } else if (decision === "reject") {
+                                    dotClass += " wysiwyg-minimap__dot--rejected";
+                                } else {
+                                    dotClass += " wysiwyg-minimap__dot--pending";
+                                }
 
-                            if (activeIndex === idx) {
-                                dotClass += " wysiwyg-minimap__dot--active";
-                            }
+                                if (activeIndex === idx) {
+                                    dotClass += " wysiwyg-minimap__dot--active";
+                                }
 
-                            return (
-                                <button
-                                    key={id}
-                                    type="button"
-                                    className={dotClass}
-                                    style={{ top: `${top}%` }}
-                                    onClick={() => setActiveIndex(idx)}
-                                    aria-label={`Jump to block ${idx + 1}`}
-                                />
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+                                return (
+                                    <button
+                                        key={id}
+                                        type="button"
+                                        className={dotClass}
+                                        style={{ top: `${top}%` }}
+                                        onClick={() => setActiveIndex(idx)}
+                                        aria-label={`Jump to block ${idx + 1}`}
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <HtmlSideBySide original={original} modified={modified} />
+            )}
         </div>
     );
 };
