@@ -15,6 +15,10 @@ import {
   Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 
+// main menu + sub menu view types
+type MainView = "diff" | "review-code" | "review-wysiwyg";
+type DiffView = "unified" | "side-by-side";
+
 // Small pill showing "Step X"
 const StepPill: React.FC<{ step: number }> = ({ step }) => (
   <span
@@ -80,6 +84,10 @@ const App: React.FC = () => {
     examples[0]?.id ?? ""
   );
 
+  // new: which top-level view and which diff view
+  const [mainView, setMainView] = useState<MainView>("review-code");
+  const [diffView, setDiffView] = useState<DiffView>("unified");
+
   const selectedExample =
     examples.find((ex) => ex.id === selectedExampleId) ?? examples[0];
 
@@ -87,6 +95,52 @@ const App: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // common card style for each panel
+  const cardStyle: React.CSSProperties = {
+    borderRadius: "10px",
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    padding: "16px",
+    boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
+  };
+
+  // styles for main menu tabs
+  const mainTabBase: React.CSSProperties = {
+    padding: "6px 14px",
+    borderRadius: "999px",
+    border: "1px solid transparent",
+    background: "transparent",
+    cursor: "pointer",
+    fontSize: "14px",
+    color: "#4b5563",
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+  };
+  const mainTabActive: React.CSSProperties = {
+    borderColor: "#2563eb",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontWeight: 600,
+  };
+
+  // styles for sub-menu tabs (inside View diff)
+  const subTabBase: React.CSSProperties = {
+    padding: "4px 10px",
+    borderRadius: "999px",
+    border: "1px solid #d1d5db",
+    background: "#f9fafb",
+    cursor: "pointer",
+    fontSize: "13px",
+    color: "#4b5563",
+  };
+  const subTabActive: React.CSSProperties = {
+    borderColor: "#6b7280",
+    background: "#e5e7eb",
+    color: "#111827",
+    fontWeight: 500,
+  };
 
   return (
     <main
@@ -233,180 +287,190 @@ const App: React.FC = () => {
             gap: "20px",
           }}
         >
-          {/* 1. Review suggestions */}
-          <section
+          {/* --- NEW: main workspace menu --- */}
+          <div
             style={{
-              borderRadius: "10px",
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              padding: "16px",
-              boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px",
+              alignItems: "center",
+              marginBottom: "8px",
+              borderBottom: "1px solid #e5e7eb",
+              paddingBottom: "8px",
             }}
           >
-            <SectionTitle
-              step={1}
-              title="Review suggestions (raw HTML)"
-              icon={<DocumentTextIcon width={20} height={20} />}
-            />
-            <p
+            <button
+              type="button"
               style={{
-                fontSize: "13px",
-                color: "#6b7280",
-                marginBottom: "10px",
+                ...mainTabBase,
+                ...(mainView === "diff" ? mainTabActive : {}),
               }}
+              onClick={() => setMainView("diff")}
             >
-              Accept or reject each suggested change directly in the HTML diff.
-              The panel on the right shows the merged result.
-            </p>
-
-            <ReviewableDiff
-              original={selectedExample.original}
-              modified={selectedExample.modified}
-            />
-          </section>
-
-          {/* 2. WYSIWYG diff */}
-          <section
-            style={{
-              borderRadius: "10px",
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              padding: "16px",
-              boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
-            }}
-          >
-            <SectionTitle
-              step={2}
-              title="Visual HTML (WYSIWYG)"
-              icon={<EyeIcon width={20} height={20} />}
-            />
-            <p
+              <AdjustmentsHorizontalIcon width={18} height={18} />
+              <span>View diff</span>
+            </button>
+            <button
+              type="button"
               style={{
-                fontSize: "13px",
-                color: "#6b7280",
-                marginBottom: "10px",
+                ...mainTabBase,
+                ...(mainView === "review-code" ? mainTabActive : {}),
               }}
+              onClick={() => setMainView("review-code")}
             >
-              See changes in a rendered HTML document. Accept/reject inline,
-              then switch to the built-in HTML preview to compare original vs
-              updated.
-            </p>
-
-            <WysiwygDiff
-              original={selectedExample.original}
-              modified={selectedExample.modified}
-            />
-          </section>
-
-          {/* 3. Unified text diff */}
-          <details
-            style={{
-              borderRadius: "10px",
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              padding: "10px 16px 14px",
-              boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
-            }}
-          >
-            <summary
+              <DocumentTextIcon width={18} height={18} />
+              <span>Review code</span>
+            </button>
+            <button
+              type="button"
               style={{
-                cursor: "pointer",
-                fontSize: "15px",
-                fontWeight: 600,
-                color: "#0b2e4e",
-                marginBottom: "4px",
+                ...mainTabBase,
+                ...(mainView === "review-wysiwyg" ? mainTabActive : {}),
+              }}
+              onClick={() => setMainView("review-wysiwyg")}
+            >
+              <EyeIcon width={18} height={18} />
+              <span>Review WYSIWYG</span>
+            </button>
+          </div>
+
+          {/* Sub-menu for "View diff" */}
+          {mainView === "diff" && (
+            <div
+              style={{
                 display: "flex",
-                alignItems: "center",
+                flexWrap: "wrap",
                 gap: "8px",
-                listStyle: "none",
+                marginBottom: "4px",
               }}
             >
-              <div
+              <button
+                type="button"
                 style={{
-                  width: "20px",
-                  height: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#0b2e4e",
+                  ...subTabBase,
+                  ...(diffView === "unified" ? subTabActive : {}),
+                }}
+                onClick={() => setDiffView("unified")}
+              >
+                Unified text diff
+              </button>
+              <button
+                type="button"
+                style={{
+                  ...subTabBase,
+                  ...(diffView === "side-by-side" ? subTabActive : {}),
+                }}
+                onClick={() => setDiffView("side-by-side")}
+              >
+                Side-by-side text diff
+              </button>
+            </div>
+          )}
+
+          {/* REVIEW CODE (raw HTML) – previous STEP 1 */}
+          {mainView === "review-code" && (
+            <section style={cardStyle}>
+              <SectionTitle
+                step={1}
+                title="Review suggestions (raw HTML)"
+                icon={<DocumentTextIcon width={20} height={20} />}
+              />
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#6b7280",
+                  marginBottom: "10px",
                 }}
               >
-                <AdjustmentsHorizontalIcon width={20} height={20} />
-              </div>
-              <StepPill step={3} />
-              <span>Advanced: unified text diff</span>
-            </summary>
-            <p
-              style={{
-                fontSize: "13px",
-                color: "#6b7280",
-                marginBottom: "8px",
-              }}
-            >
-              Developer-oriented text diff showing all changes in a single
-              block, using the granularity selected above.
-            </p>
+                Accept or reject each suggested change directly in the HTML diff.
+                The panel on the right shows the merged result.
+              </p>
 
-            <TextDiff
-              original={selectedExample.original}
-              modified={selectedExample.modified}
-              mode={mode}
-            />
-          </details>
+              <ReviewableDiff
+                original={selectedExample.original}
+                modified={selectedExample.modified}
+              />
+            </section>
+          )}
 
-          {/* 4. Side-by-side text diff */}
-          <details
-            style={{
-              borderRadius: "10px",
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              padding: "10px 16px 14px",
-              boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
-            }}
-          >
-            <summary
-              style={{
-                cursor: "pointer",
-                fontSize: "15px",
-                fontWeight: 600,
-                color: "#0b2e4e",
-                marginBottom: "4px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                listStyle: "none",
-              }}
-            >
-              <div
+          {/* REVIEW WYSIWYG – previous STEP 2 */}
+          {mainView === "review-wysiwyg" && (
+            <section style={cardStyle}>
+              <SectionTitle
+                step={2}
+                title="Visual HTML (WYSIWYG)"
+                icon={<EyeIcon width={20} height={20} />}
+              />
+              <p
                 style={{
-                  width: "20px",
-                  height: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#0b2e4e",
+                  fontSize: "13px",
+                  color: "#6b7280",
+                  marginBottom: "10px",
                 }}
               >
-                <Squares2X2Icon width={20} height={20} />
-              </div>
-              <StepPill step={4} />
-              <span>Advanced: side-by-side text diff</span>
-            </summary>
-            <p
-              style={{
-                fontSize: "13px",
-                color: "#6b7280",
-                marginBottom: "8px",
-              }}
-            >
-              Original and modified HTML side by side for quick comparison.
-            </p>
+                See changes in a rendered HTML document. Accept/reject inline,
+                then switch to the built-in HTML preview to compare original vs
+                updated.
+              </p>
 
-            <SideBySideDiff
-              original={selectedExample.original}
-              modified={selectedExample.modified}
-            />
-          </details>
+              <WysiwygDiff
+                original={selectedExample.original}
+                modified={selectedExample.modified}
+              />
+            </section>
+          )}
+
+          {/* VIEW DIFF: unified – previous STEP 3 */}
+          {mainView === "diff" && diffView === "unified" && (
+            <section style={cardStyle}>
+              <SectionTitle
+                step={3}
+                title="Unified text diff"
+                icon={<AdjustmentsHorizontalIcon width={20} height={20} />}
+              />
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#6b7280",
+                  marginBottom: "8px",
+                }}
+              >
+                Developer-oriented text diff showing all changes in a single
+                block, using the granularity selected above.
+              </p>
+
+              <TextDiff
+                original={selectedExample.original}
+                modified={selectedExample.modified}
+                mode={mode}
+              />
+            </section>
+          )}
+
+          {/* VIEW DIFF: side-by-side – previous STEP 4 */}
+          {mainView === "diff" && diffView === "side-by-side" && (
+            <section style={cardStyle}>
+              <SectionTitle
+                step={4}
+                title="Side-by-side text diff"
+                icon={<Squares2X2Icon width={20} height={20} />}
+              />
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#6b7280",
+                  marginBottom: "8px",
+                }}
+              >
+                Original and modified HTML side by side for quick comparison.
+              </p>
+
+              <SideBySideDiff
+                original={selectedExample.original}
+                modified={selectedExample.modified}
+              />
+            </section>
+          )}
         </section>
       </div>
     </main>
