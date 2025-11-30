@@ -408,6 +408,13 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 </div>
             </div>
 
+            {stats.pending === 0 && stats.total > 0 && (
+                <div className="wysiwyg-banner wysiwyg-banner--success">
+                    <span className="wysiwyg-banner__icon">✔</span>
+                    <span>Review complete: all changes have been accepted or rejected.</span>
+                </div>
+            )}
+
             {/* Content + minimap */}
             <div className="wysiwyg-content-wrapper">
                 <div className="wysiwyg-content">{renderNode(tree)}</div>

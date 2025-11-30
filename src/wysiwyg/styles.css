@@ -395,3 +395,27 @@
     background: #fef2f2;
     color: #b91c1c;
 }
+
+/* ------------------------------
+   Review complete banner
+------------------------------ */
+
+.wysiwyg-banner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.wysiwyg-banner--success {
+    background: #ecfdf3;
+    border: 1px solid #16a34a;
+    color: #166534;
+}
+
+.wysiwyg-banner__icon {
+    font-size: 16px;
+}
