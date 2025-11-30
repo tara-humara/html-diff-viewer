@@ -1,6 +1,4 @@
-// --- FULL UPDATED FILE ---
-// (Copy & paste into src/wysiwyg/WysiwygDiff.tsx)
-
+// src/wysiwyg/WysiwygDiff.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { diffHtmlTrees } from "./diff";
 import type { WysiwygNode, InlinePart } from "./types";
@@ -22,10 +20,12 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
     const [decisions, setDecisions] = useState<Decisions>({});
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
+    if (!tree) {
+        return <div className="wysiwyg-container">No supported HTML.</div>;
+    }
+
     // Collect all interactive nodes (blocks + li) in document order
     const interactiveIds = useMemo(() => {
-        if (!tree) return [] as string[];
-
         const ids: string[] = [];
 
         const visit = (node: WysiwygNode) => {
@@ -80,8 +80,9 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         }
 
         if (activeIndex === null) setActiveIndex(0);
-        else if (activeIndex >= interactiveIds.length)
+        else if (activeIndex >= interactiveIds.length) {
             setActiveIndex(interactiveIds.length - 1);
+        }
     }, [interactiveIds, activeIndex]);
 
     // Scroll active node into view
@@ -90,7 +91,9 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         const id = interactiveIds[activeIndex];
         if (!id) return;
         const el = nodeRefs.current[id];
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
     }, [activeIndex, interactiveIds]);
 
     // Decision handlers
@@ -175,9 +178,18 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
     // Render helpers
     const renderInlineParts = (parts: InlinePart[]) =>
         parts.map((p, idx) => {
-            if (p.added) return <span key={idx} className="inline-added">{p.value}</span>;
+            if (p.added)
+                return (
+                    <span key={idx} className="inline-added">
+                        {p.value}
+                    </span>
+                );
             if (p.removed)
-                return <span key={idx} className="inline-removed">{p.value}</span>;
+                return (
+                    <span key={idx} className="inline-removed">
+                        {p.value}
+                    </span>
+                );
             return <span key={idx}>{p.value}</span>;
         });
 
@@ -213,8 +225,8 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             else if (decision === "reject") itemClass += " li-rejected";
             if (isActive) itemClass += " li-active";
 
-            const WrapperTag = node.type === "block" ? "div" : "li";
-            const ContentTag = node.type === "block" ? (node.tag as any) : "span";
+            const WrapperTag: any = node.type === "block" ? "div" : "li";
+            const ContentTag: any = node.type === "block" ? node.tag : "span";
 
             return (
                 <WrapperTag
@@ -229,6 +241,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
                         <span className="li-actions">
                             <button
+                                type="button"
                                 className={
                                     "li-btn li-btn-accept" +
                                     (decision === "accept" ? " li-btn-active" : "")
@@ -244,6 +257,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                                 Accept
                             </button>
                             <button
+                                type="button"
                                 className={
                                     "li-btn li-btn-reject" +
                                     (decision === "reject" ? " li-btn-active" : "")
@@ -266,8 +280,6 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
         return null;
     };
-
-    if (!tree) return <div className="wysiwyg-container">No supported HTML.</div>;
 
     return (
         <div className="wysiwyg-container">
@@ -312,8 +324,43 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 </div>
             </div>
 
-            {/* Render visual HTML diff */}
-            <div className="wysiwyg-content">{renderNode(tree)}</div>
+            {/* Content + minimap */}
+            <div className="wysiwyg-content-wrapper">
+                <div className="wysiwyg-content">{renderNode(tree)}</div>
+
+                {interactiveIds.length > 0 && (
+                    <div className="wysiwyg-minimap">
+                        {interactiveIds.map((id, idx) => {
+                            const decision = decisions[id];
+                            const top = ((idx + 0.5) / interactiveIds.length) * 100;
+
+                            let dotClass = "wysiwyg-minimap__dot";
+                            if (decision === "accept") {
+                                dotClass += " wysiwyg-minimap__dot--accepted";
+                            } else if (decision === "reject") {
+                                dotClass += " wysiwyg-minimap__dot--rejected";
+                            } else {
+                                dotClass += " wysiwyg-minimap__dot--pending";
+                            }
+
+                            if (activeIndex === idx) {
+                                dotClass += " wysiwyg-minimap__dot--active";
+                            }
+
+                            return (
+                                <button
+                                    key={id}
+                                    type="button"
+                                    className={dotClass}
+                                    style={{ top: `${top}%` }}
+                                    onClick={() => setActiveIndex(idx)}
+                                    aria-label={`Jump to block ${idx + 1}`}
+                                />
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

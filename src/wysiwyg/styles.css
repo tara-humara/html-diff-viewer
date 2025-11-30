@@ -1,5 +1,9 @@
 /* src/wysiwyg/styles.css */
 
+/* ------------------------------
+   Base Container
+------------------------------ */
+
 .wysiwyg-container {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
         sans-serif;
@@ -8,6 +12,8 @@
     border: 1px solid #e5e7eb;
     padding: 12px 16px;
 }
+
+/* Typography adjustments */
 
 .wysiwyg-container p,
 .wysiwyg-container h2 {
@@ -19,7 +25,9 @@
     padding-left: 1.5rem;
 }
 
-/* List item status styles */
+/* ------------------------------
+   LI Status Styles
+------------------------------ */
 
 .li-added {
     background: rgba(34, 197, 94, 0.2);
@@ -38,7 +46,7 @@
     background: transparent;
 }
 
-/* Inline text diff */
+/* Inline highlights */
 
 .inline-added {
     background: rgba(34, 197, 94, 0.3);
@@ -51,49 +59,7 @@
     text-decoration: line-through;
 }
 
-/* ---- Side-by-side preview ---- */
-
-.wysiwyg-compare-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 20px;
-}
-
-.wysiwyg-pane {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    padding: 12px;
-}
-
-.wysiwyg-pane-title {
-    margin: 0 0 8px 0;
-    font-size: 14px;
-    color: #374151;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 4px;
-}
-
-.wysiwyg-pane-content {
-    padding: 4px;
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-.wysiwyg-pane-content ul,
-.wysiwyg-pane-content ol {
-    padding-left: 1.25rem;
-}
-
-/* Container already exists; we extend behaviour */
-
-.wysiwyg-container ul,
-.wysiwyg-container ol {
-    padding-left: 1.5rem;
-}
-
-/* Existing li status classes remain; we add decision-based ones */
+/* Decision states */
 
 .li-accepted {
     box-shadow: inset 2px 0 0 #16a34a;
@@ -104,7 +70,17 @@
     opacity: 0.85;
 }
 
-/* Layout for li content + actions */
+/* Active item from keyboard (J/K) */
+
+.li-active {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    background-color: rgba(59, 130, 246, 0.06);
+}
+
+/* ------------------------------
+   LI content + Actions layout
+------------------------------ */
 
 .li-content-row {
     display: flex;
@@ -120,7 +96,7 @@
     flex-shrink: 0;
 }
 
-/* Buttons inside WYSIWYG diff */
+/* Buttons inside WYSIWYG */
 
 .li-btn {
     font-size: 11px;
@@ -153,9 +129,10 @@
     border-color: #111827;
 }
 
-/* ---- Animations for WYSIWYG diff ---- */
+/* ------------------------------
+   Animations
+------------------------------ */
 
-/* Smooth background & border transitions */
 .li-accepted,
 .li-rejected,
 .inline-added,
@@ -169,15 +146,7 @@
         transform 0.15s ease;
 }
 
-/* Pulse when accepting/rejecting a block or list item */
-.li-accepted {
-    animation: wysiwyg-accept-pulse 0.25s ease-out;
-}
-
-.li-rejected {
-    animation: wysiwyg-reject-pulse 0.25s ease-out;
-}
-
+/* Accept pulse */
 @keyframes wysiwyg-accept-pulse {
     0% {
         box-shadow: inset 2px 0 0 #16a34a, 0 0 0 0 rgba(34, 197, 94, 0.6);
@@ -188,6 +157,11 @@
     }
 }
 
+.li-accepted {
+    animation: wysiwyg-accept-pulse 0.25s ease-out;
+}
+
+/* Reject pulse */
 @keyframes wysiwyg-reject-pulse {
     0% {
         box-shadow: inset 2px 0 0 #dc2626, 0 0 0 0 rgba(239, 68, 68, 0.6);
@@ -198,13 +172,13 @@
     }
 }
 
-/* Active item when using keyboard navigation */
-.li-active {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
-    background-color: rgba(59, 130, 246, 0.06);
-    /* subtle blue bg */
+.li-rejected {
+    animation: wysiwyg-reject-pulse 0.25s ease-out;
 }
+
+/* ------------------------------
+   Toolbar
+------------------------------ */
 
 .wysiwyg-toolbar {
     display: flex;
@@ -283,6 +257,72 @@
     cursor: default;
 }
 
+/* ------------------------------
+   Layout Wrapper (content + minimap)
+------------------------------ */
+
+/* wrapper that holds content + minimap */
+.wysiwyg-content-wrapper {
+    position: relative;
+}
+
+/* main visual HTML content */
 .wysiwyg-content {
     padding: 4px;
+    padding-right: 24px;
+    /* space so text doesn't go under minimap */
+}
+
+/* ------------------------------
+   Minimap rail (matches review)
+------------------------------ */
+
+.wysiwyg-minimap {
+    position: absolute;
+    top: 8px;
+    right: 4px;
+    bottom: 8px;
+    width: 10px;
+    background: #e5e7eb;
+    /* gray-200 */
+    border-radius: 9999px;
+}
+
+/* one dot per interactive node (li or block) */
+.wysiwyg-minimap__dot {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    height: 6px;
+    border-radius: 9999px;
+    cursor: pointer;
+    opacity: 0.75;
+
+    /* keep dots cleanly inside the rail */
+    border: none;
+    padding: 0;
+}
+
+/* dot colours */
+.wysiwyg-minimap__dot--pending {
+    background: #9ca3af;
+    /* gray */
+}
+
+.wysiwyg-minimap__dot--accepted {
+    background: #10b981;
+    /* green */
+}
+
+.wysiwyg-minimap__dot--rejected {
+    background: #ef4444;
+    /* red */
+}
+
+/* currently active / focused */
+.wysiwyg-minimap__dot--active {
+    height: 8px;
+    opacity: 1;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.7);
+    /* blue ring */
 }

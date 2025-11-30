@@ -436,3 +436,66 @@
     opacity: 0.4;
     cursor: default;
 }
+
+/* === Minimap inside review panel === */
+
+.review-panel__body--with-minimap {
+    position: relative;
+    display: flex;
+}
+
+/* main text area gets some padding on the right to avoid overlap */
+.review-body-text {
+    flex: 1;
+    padding-right: 24px;
+}
+
+/* vertical minimap rail */
+.review-minimap {
+    position: absolute;
+    top: 8px;
+    right: 4px;
+    width: 10px;
+    bottom: 8px;
+    border-radius: 9999px;
+    background: #e5e7eb;
+    /* gray-200 */
+    pointer-events: auto;
+}
+
+/* one dot per change */
+.review-minimap__dot {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    height: 6px;
+    border-radius: 9999px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.75;
+    background: #9ca3af;
+    /* gray-400 */
+}
+
+.review-minimap__dot--pending {
+    background: #9ca3af;
+    /* gray */
+}
+
+.review-minimap__dot--accepted {
+    background: #10b981;
+    /* emerald-500 */
+}
+
+.review-minimap__dot--rejected {
+    background: #ef4444;
+    /* red-500 */
+}
+
+.review-minimap__dot--active {
+    height: 8px;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.7);
+    /* blue ring */
+    opacity: 1;
+}

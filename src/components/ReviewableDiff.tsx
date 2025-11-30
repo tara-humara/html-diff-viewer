@@ -376,30 +376,65 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                     </div>
                 )}
 
-                <div className="review-panel__body">
-                    {blocks.map((block, idx) => {
-                        if (block.kind === "text") {
-                            return <span key={idx}>{block.text}</span>;
-                        }
+                <div className="review-panel__body review-panel__body--with-minimap">
+                    {/* Main text area */}
+                    <div className="review-body-text">
+                        {blocks.map((block, idx) => {
+                            if (block.kind === "text") {
+                                return <span key={idx}>{block.text}</span>;
+                            }
 
-                        const { change } = block;
-                        const decision = decisions[change.id];
-                        const changeIdx = changeIndexMap[change.id] ?? 0;
+                            const { change } = block;
+                            const decision = decisions[change.id];
+                            const changeIdx = changeIndexMap[change.id] ?? 0;
 
-                        return (
-                            <ChangeInline
-                                key={change.id}
-                                ref={(el) => {
-                                    changeRefs.current[change.id] = el;
-                                }}
-                                change={change}
-                                decision={decision}
-                                isActive={activeIndex === changeIdx}
-                                onActivate={() => setActiveIndex(changeIdx)}
-                                onDecision={(v) => handleDecision(change.id, v)}
-                            />
-                        );
-                    })}
+                            return (
+                                <ChangeInline
+                                    key={change.id}
+                                    ref={(el) => {
+                                        changeRefs.current[change.id] = el;
+                                    }}
+                                    change={change}
+                                    decision={decision}
+                                    isActive={activeIndex === changeIdx}
+                                    onActivate={() => setActiveIndex(changeIdx)}
+                                    onDecision={(v) => handleDecision(change.id, v)}
+                                />
+                            );
+                        })}
+                    </div>
+
+                    {/* Minimap on the right */}
+                    {changes.length > 0 && (
+                        <div className="review-minimap">
+                            {changes.map((change, idx) => {
+                                const decision = decisions[change.id];
+                                const top = ((idx + 0.5) / changes.length) * 100;
+
+                                let dotClass = "review-minimap__dot";
+                                if (decision === true)
+                                    dotClass += " review-minimap__dot--accepted";
+                                else if (decision === false)
+                                    dotClass += " review-minimap__dot--rejected";
+                                else dotClass += " review-minimap__dot--pending";
+
+                                if (activeIndex === idx) {
+                                    dotClass += " review-minimap__dot--active";
+                                }
+
+                                return (
+                                    <button
+                                        key={change.id}
+                                        type="button"
+                                        className={dotClass}
+                                        style={{ top: `${top}%` }}
+                                        onClick={() => setActiveIndex(idx)}
+                                        aria-label={`Jump to change ${idx + 1}`}
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
 
