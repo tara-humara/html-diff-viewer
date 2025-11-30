@@ -6,6 +6,7 @@ import { SideBySideDiff } from "./components/SideBySideDiff";
 import { ReviewableDiff } from "./components/ReviewableDiff";
 import { WysiwygDiff } from "./wysiwyg/WysiwygDiff";
 import { HtmlSideBySide } from "./wysiwyg/HtmlSideBySide";
+import { TimelineDiff } from "./components/TimelineDiff";
 import { examples } from "./examples";
 
 type ViewMode =
@@ -13,7 +14,8 @@ type ViewMode =
   | "side-by-side"
   | "review"
   | "wysiwyg"
-  | "html-preview";
+  | "html-preview"
+  | "timeline";
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<DiffMode>("words");
@@ -92,10 +94,11 @@ const App: React.FC = () => {
             <option value="review">Review (accept/reject)</option>
             <option value="wysiwyg">WYSIWYG HTML diff</option>
             <option value="html-preview">HTML preview (side-by-side)</option>
+            <option value="timeline">Timeline</option>
           </select>
         </label>
 
-        {/* Diff granularity (for unified view only) */}
+        {/* Diff granularity (only for unified view) */}
         {showModeSelector && (
           <label style={{ fontSize: "14px", color: "#374151" }}>
             Diff granularity:{" "}
@@ -151,7 +154,7 @@ const App: React.FC = () => {
         )}
       </section>
 
-      {/* Diff / preview output section */}
+      {/* Output section */}
       <section style={{ maxWidth: "1100px" }}>
         {viewMode === "unified" && (
           <TextDiff
@@ -184,6 +187,13 @@ const App: React.FC = () => {
 
         {viewMode === "html-preview" && (
           <HtmlSideBySide
+            original={selectedExample.original}
+            modified={selectedExample.modified}
+          />
+        )}
+
+        {viewMode === "timeline" && (
+          <TimelineDiff
             original={selectedExample.original}
             modified={selectedExample.modified}
           />
