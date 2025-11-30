@@ -5,16 +5,9 @@ import type { DiffMode } from "./components/TextDiff";
 import { SideBySideDiff } from "./components/SideBySideDiff";
 import { ReviewableDiff } from "./components/ReviewableDiff";
 import { WysiwygDiff } from "./wysiwyg/WysiwygDiff";
-import { TimelineDiff } from "./components/TimelineDiff";
 import { examples } from "./examples";
 
-type ViewMode =
-  | "unified"
-  | "side-by-side"
-  | "review"
-  | "wysiwyg"
-  | "html-preview"
-  | "timeline";
+type ViewMode = "unified" | "side-by-side" | "review" | "wysiwyg";
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<DiffMode>("words");
@@ -92,7 +85,6 @@ const App: React.FC = () => {
             <option value="side-by-side">Side by side</option>
             <option value="review">Review (accept/reject)</option>
             <option value="wysiwyg">WYSIWYG HTML diff</option>
-            <option value="timeline">Timeline</option>
           </select>
         </label>
 
@@ -178,13 +170,6 @@ const App: React.FC = () => {
 
         {viewMode === "wysiwyg" && (
           <WysiwygDiff
-            original={selectedExample.original}
-            modified={selectedExample.modified}
-          />
-        )}
-
-        {viewMode === "timeline" && (
-          <TimelineDiff
             original={selectedExample.original}
             modified={selectedExample.modified}
           />
