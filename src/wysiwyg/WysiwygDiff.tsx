@@ -24,18 +24,42 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const [panelMode, setPanelMode] = useState<PanelMode>("review");
 
+    // Which collapsed groups of unchanged <li> inside lists are expanded
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+        {}
+    );
+
     if (!tree) {
         return <div className="wysiwyg-container">No supported HTML.</div>;
     }
 
-    // Collect all interactive nodes (blocks + li) in document order
+    // Reset when example changes
+    useEffect(() => {
+        setDecisions({});
+        setActiveIndex(null);
+        setPanelMode("review");
+        setExpandedGroups({});
+    }, [original, modified]);
+
+    const nodeHasInlineDiff = (node: WysiwygNode): boolean => {
+        if (node.type !== "li" && node.type !== "block") return false;
+        return node.inlineParts.some((p) => p.added || p.removed);
+    };
+
+    // Interactive = changed nodes (used for stats / minimap / actions)
     const interactiveIds = useMemo(() => {
         const ids: string[] = [];
 
         const visit = (node: WysiwygNode) => {
             if (node.type === "li" || node.type === "block") {
-                ids.push(node.id);
-            } else if (
+                const hasInline = nodeHasInlineDiff(node);
+                const isChangedNode = node.status !== "unchanged" || hasInline;
+                if (isChangedNode) {
+                    ids.push(node.id);
+                }
+            }
+
+            if (
                 node.type === "root" ||
                 node.type === "ul" ||
                 node.type === "ol"
@@ -48,7 +72,11 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         return ids;
     }, [tree]);
 
-    // Map id -> index
+    const interactiveSet = useMemo(
+        () => new Set(interactiveIds),
+        [interactiveIds]
+    );
+
     const idToIndex = useMemo(() => {
         const map: Record<string, number> = {};
         interactiveIds.forEach((id, idx) => {
@@ -57,10 +85,8 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         return map;
     }, [interactiveIds]);
 
-    // Refs for scroll-to-active
     const nodeRefs = useRef<Record<string, HTMLElement | null>>({});
 
-    // Stats
     const stats = useMemo(() => {
         const total = interactiveIds.length;
         let accepted = 0;
@@ -76,19 +102,17 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         return { total, accepted, rejected, pending };
     }, [interactiveIds, decisions]);
 
-    // Ensure activeIndex is valid, but don't auto-select the first one
     useEffect(() => {
         if (interactiveIds.length === 0) {
             if (activeIndex !== null) setActiveIndex(null);
             return;
         }
-
         if (activeIndex !== null && activeIndex >= interactiveIds.length) {
             setActiveIndex(interactiveIds.length - 1);
         }
     }, [interactiveIds, activeIndex]);
 
-    // Scroll active node into view (review mode only, after user interaction)
+    // Scroll active node into view (review mode only)
     useEffect(() => {
         if (panelMode !== "review") return;
         if (activeIndex === null) return;
@@ -100,7 +124,6 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         }
     }, [activeIndex, interactiveIds, panelMode]);
 
-    // Decision helpers
     const setDecision = (id: string, value: Decision) => {
         setDecisions((prev) => ({ ...prev, [id]: value }));
     };
@@ -117,6 +140,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
     const handleReset = () => {
         setDecisions({});
+        setExpandedGroups({});
     };
 
     const jumpToNextPending = () => {
@@ -135,7 +159,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         }
     };
 
-    // Keyboard shortcuts J/K/A/R (only in review mode)
+    // Keyboard shortcuts J/K/A/R
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (panelMode !== "review") return;
@@ -151,7 +175,6 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             }
 
             if (interactiveIds.length === 0) return;
-
             const key = e.key.toLowerCase();
 
             if (key === "j") {
@@ -181,7 +204,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         return () => window.removeEventListener("keydown", handler);
     }, [interactiveIds, activeIndex, panelMode]);
 
-    // Render helpers
+    // ----- Render helpers -----
     const renderInlineParts = (parts: InlinePart[]) =>
         parts.map((p, idx) => {
             if (p.added)
@@ -199,24 +222,21 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             return <span key={idx}>{p.value}</span>;
         });
 
-    // Build original / modified text from diff parts
     const buildTextFromParts = (
         parts: InlinePart[],
         mode: "original" | "modified"
-    ) => {
-        return parts
+    ) =>
+        parts
             .map((p) => {
                 if (mode === "original") {
-                    // original text = unchanged + removed segments (skip added-only)
                     return p.added ? "" : p.value;
                 }
-                // modified text = unchanged + added segments (skip removed-only)
                 return p.removed ? "" : p.value;
             })
             .join("");
-    };
 
     const renderNode = (node: WysiwygNode): React.ReactNode => {
+        // Root
         if (node.type === "root") {
             return (
                 <>
@@ -227,26 +247,145 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             );
         }
 
+        // Lists: group unchanged <li> into collapsed blocks (only when count >= 2)
         if (node.type === "ul" || node.type === "ol") {
             const Tag = node.type;
-            return (
-                <Tag>
-                    {node.children.map((child, i) => (
-                        <React.Fragment key={i}>{renderNode(child)}</React.Fragment>
-                    ))}
-                </Tag>
-            );
+            const children = node.children;
+            const out: React.ReactNode[] = [];
+
+            const isUnchangedLi = (n: WysiwygNode | undefined) =>
+                n &&
+                n.type === "li" &&
+                !interactiveSet.has(n.id) &&
+                n.status === "unchanged";
+
+            for (let i = 0; i < children.length;) {
+                const child = children[i];
+
+                if (isUnchangedLi(child)) {
+                    // Collect run of unchanged li's
+                    let j = i;
+                    while (j < children.length && isUnchangedLi(children[j])) j++;
+
+                    const count = j - i;
+
+                    if (count === 1) {
+                        // Threshold: single unchanged item is shown normally
+                        out.push(
+                            <React.Fragment key={`li-${i}`}>
+                                {renderNode(children[i])}
+                            </React.Fragment>
+                        );
+                    } else {
+                        // 2+ unchanged items: collapsed group with Show/Hide
+                        const groupId = `group-${i}-${j}`;
+                        const expanded = !!expandedGroups[groupId];
+
+                        if (!expanded) {
+                            out.push(
+                                <li key={groupId} className="li-collapsed">
+                                    <div className="li-content-row li-content-row--collapsed">
+                                        <span className="li-collapsed__label">
+                                            {count === 1
+                                                ? "1 unchanged item hidden"
+                                                : `${count} unchanged items hidden`}
+                                        </span>
+                                        {panelMode === "review" && (
+                                            <button
+                                                type="button"
+                                                className="li-collapsed__btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setExpandedGroups((prev) => ({
+                                                        ...prev,
+                                                        [groupId]: true,
+                                                    }));
+                                                }}
+                                            >
+                                                Show
+                                            </button>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        } else {
+                            // Expanded: show each li + a "Hide unchanged" row
+                            for (let k = i; k < j; k++) {
+                                out.push(
+                                    <React.Fragment key={`li-${k}`}>
+                                        {renderNode(children[k])}
+                                    </React.Fragment>
+                                );
+                            }
+                            if (panelMode === "review") {
+                                out.push(
+                                    <li key={`${groupId}-hide`} className="li-collapsed">
+                                        <div className="li-content-row">
+                                            <button
+                                                type="button"
+                                                className="li-hide-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setExpandedGroups((prev) => ({
+                                                        ...prev,
+                                                        [groupId]: false,
+                                                    }));
+                                                }}
+                                            >
+                                                Hide unchanged
+                                            </button>
+                                        </div>
+                                    </li>
+                                );
+                            }
+                        }
+                    }
+
+                    i = j;
+                } else {
+                    out.push(
+                        <React.Fragment key={`child-${i}`}>
+                            {renderNode(child)}
+                        </React.Fragment>
+                    );
+                    i++;
+                }
+            }
+
+            return <Tag>{out}</Tag>;
         }
 
+        // Blocks & list items
         if (node.type === "li" || node.type === "block") {
-            const idx = idToIndex[node.id] ?? 0;
-            const isActive = activeIndex === idx;
-            const decision = decisions[node.id];
+            const isInteractive = interactiveSet.has(node.id);
+            const idx = isInteractive ? idToIndex[node.id] ?? 0 : -1;
+            const isActive = isInteractive && activeIndex === idx;
+            const decision = isInteractive ? decisions[node.id] : undefined;
 
             const WrapperTag: any = node.type === "block" ? "div" : "li";
             const ContentTag: any = node.type === "block" ? node.tag : "span";
 
-            // Handlers for icon buttons
+            // Non-interactive unchanged block visible as plain text
+            if (!isInteractive) {
+                let wrapperClass = `li-${node.status}`;
+                if (isActive) wrapperClass += " li-active";
+
+                const text = buildTextFromParts(node.inlineParts, "original");
+
+                return (
+                    <WrapperTag
+                        className={wrapperClass}
+                        ref={(el: HTMLElement | null) => {
+                            nodeRefs.current[node.id] = el;
+                        }}
+                    >
+                        <div className="li-content-row">
+                            <ContentTag>{text}</ContentTag>
+                        </div>
+                    </WrapperTag>
+                );
+            }
+
             const onAcceptClick = (e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
                 const newDecision = decision === "accept" ? undefined : "accept";
@@ -259,7 +398,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 setDecision(node.id, newDecision);
             };
 
-            // --- Resolved state: show final text with no diff colours ---
+            // Resolved interactive block
             if (decision === "accept" || decision === "reject") {
                 const finalText =
                     decision === "accept"
@@ -310,7 +449,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 );
             }
 
-            // --- Pending state: show full diff with rails + inline highlights ---
+            // Pending interactive block
             let itemClass = `li-${node.status}`;
             if (isActive) itemClass += " li-active";
 
@@ -324,7 +463,6 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 >
                     <div className="li-content-row">
                         <ContentTag>{renderInlineParts(node.inlineParts)}</ContentTag>
-
                         <span className="li-actions">
                             <button
                                 type="button"
@@ -377,7 +515,6 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 </div>
 
                 <div className="wysiwyg-actions">
-                    {/* Mode toggle */}
                     <button
                         className={
                             "wysiwyg-btn toggle" +

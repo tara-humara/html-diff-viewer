@@ -456,3 +456,46 @@
     height: 18px;
     background: #e5e7eb;
 }
+
+/* Collapsed unchanged blocks in WYSIWYG view */
+.li-collapsed {
+    color: #6b7280;
+}
+
+.li-content-row--collapsed {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-style: italic;
+}
+
+.li-collapsed__label {
+    opacity: 0.8;
+}
+
+.li-collapsed__btn {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px dashed #d1d5db;
+    background: #f9fafb;
+    cursor: pointer;
+}
+
+.li-collapsed__btn:hover {
+    background: #e5e7eb;
+}
+
+.li-hide-btn {
+    font-size: 11px;
+    margin-right: 6px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+}
+
+.li-hide-btn:hover {
+    text-decoration: underline;
+}

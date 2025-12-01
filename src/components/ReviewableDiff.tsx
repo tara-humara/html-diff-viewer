@@ -36,31 +36,21 @@ const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
         const rejectActive = decision === false;
 
         return (
-            <span
-                ref={ref}
-                className={containerClass}
-                onClick={() => onActivate()}
-            >
+            <span ref={ref} className={containerClass} onClick={() => onActivate()}>
                 <span className={bubbleKindClass}>
-                    {/* content kept on one line */}
-                    <span className="change-inline__content">
-                        {change.type !== "add" && change.original && (
-                            <span className="change-inline__original">
-                                {change.original}
-                            </span>
-                        )}
-                        {change.type === "replace" && (
-                            <span className="change-inline__arrow">→</span>
-                        )}
-                        {change.type !== "remove" && change.modified && (
-                            <span className="change-inline__modified">
-                                {change.modified}
-                            </span>
-                        )}
-                        {change.type === "remove" && !change.original && (
-                            <span className="change-inline__modified">(remove)</span>
-                        )}
-                    </span>
+                    {/* visible bubble content */}
+                    {change.type !== "add" && change.original && (
+                        <span className="change-inline__original">{change.original}</span>
+                    )}
+                    {change.type === "replace" && (
+                        <span className="change-inline__arrow">→</span>
+                    )}
+                    {change.type !== "remove" && change.modified && (
+                        <span className="change-inline__modified">{change.modified}</span>
+                    )}
+                    {change.type === "remove" && !change.original && (
+                        <span className="change-inline__modified">(remove)</span>
+                    )}
 
                     {/* tooltip */}
                     <span className="change-tooltip">
@@ -72,7 +62,7 @@ const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
                 </span>
                 <span
                     className="change-inline__actions"
-                    onClick={(e) => e.stopPropagation()} // don't re-trigger onActivate when clicking buttons
+                    onClick={(e) => e.stopPropagation()}
                 >
                     <button
                         type="button"
@@ -119,6 +109,18 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
     const [showRendered, setShowRendered] = useState(false);
     const [copied, setCopied] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+    // Track which unchanged blocks are expanded (for collapse / expand)
+    const [expandedBlocks, setExpandedBlocks] = useState<Record<number, boolean>>(
+        {}
+    );
+
+    // Reset when example changes
+    useEffect(() => {
+        setExpandedBlocks({});
+        setActiveIndex(null);
+        setDecisions({});
+    }, [original, modified]);
 
     // List of all changes (for stats + keyboard navigation)
     const changes: Change[] = useMemo(
@@ -167,8 +169,7 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
         [blocks, decisions]
     );
 
-    // Ensure we have a valid activeIndex when there are changes,
-    // but do NOT auto-select the first change on initial mount
+    // Ensure we have a valid activeIndex when there are changes
     useEffect(() => {
         if (changes.length === 0) {
             if (activeIndex !== null) setActiveIndex(null);
@@ -255,7 +256,6 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
     // Keyboard shortcuts: J/K/A/R
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
-            // Ignore when typing in inputs/textareas/contentEditable
             const target = e.target as HTMLElement | null;
             if (
                 target &&
@@ -296,9 +296,7 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                     if (!change) return prev;
                     return { ...prev, [change.id]: true };
                 });
-                if (activeIndex === null) {
-                    setActiveIndex(0);
-                }
+                if (activeIndex === null) setActiveIndex(0);
             } else if (key === "r") {
                 e.preventDefault();
                 setDecisions((prev) => {
@@ -309,9 +307,7 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                     if (!change) return prev;
                     return { ...prev, [change.id]: false };
                 });
-                if (activeIndex === null) {
-                    setActiveIndex(0);
-                }
+                if (activeIndex === null) setActiveIndex(0);
             }
         };
 
@@ -327,9 +323,7 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                     <div>
                         <div className="review-panel__title">Review suggestions</div>
                         <div className="review-stats">
-                            <span className="review-stats__pill">
-                                Total: {stats.total}
-                            </span>
+                            <span className="review-stats__pill">Total: {stats.total}</span>
                             <span className="review-stats__pill review-stats__pill--accepted">
                                 Accepted: {stats.accepted}
                             </span>
@@ -403,7 +397,68 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                         <div className="review-body-text">
                             {blocks.map((block, idx) => {
                                 if (block.kind === "text") {
-                                    return <span key={idx}>{block.text}</span>;
+                                    const text = block.text;
+                                    const lines = text.split("\n");
+                                    const nonEmptyLines = lines.filter(
+                                        (l) => l.trim().length > 0
+                                    );
+                                    const lineCount = nonEmptyLines.length;
+
+                                    const collapsible =
+                                        lineCount >= 4 && text.length > 200; // heuristics
+                                    const expanded = !!expandedBlocks[idx];
+
+                                    // Collapsed pill
+                                    if (collapsible && !expanded) {
+                                        return (
+                                            <div
+                                                key={`collapsed-${idx}`}
+                                                className="review-collapsed"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    className="review-collapsed__btn"
+                                                    onClick={() =>
+                                                        setExpandedBlocks((prev) => ({
+                                                            ...prev,
+                                                            [idx]: true,
+                                                        }))
+                                                    }
+                                                >
+                                                    Show {lineCount} unchanged lines
+                                                </button>
+                                            </div>
+                                        );
+                                    }
+
+                                    // Expanded / non-collapsible block
+                                    if (collapsible && expanded) {
+                                        return (
+                                            <div
+                                                key={`text-${idx}`}
+                                                className="review-unchanged-block"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    className="review-collapsed__btn review-collapsed__btn--inline"
+                                                    onClick={() =>
+                                                        setExpandedBlocks((prev) => ({
+                                                            ...prev,
+                                                            [idx]: false,
+                                                        }))
+                                                    }
+                                                >
+                                                    Hide unchanged lines
+                                                </button>
+                                                <span>{text}</span>
+                                            </div>
+                                        );
+                                    }
+
+                                    // Small text block: just render as-is
+                                    return (
+                                        <span key={`text-${idx}`}>{text}</span>
+                                    );
                                 }
 
                                 const { change } = block;
@@ -431,8 +486,7 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                             <div className="review-minimap">
                                 {changes.map((change, idx) => {
                                     const decision = decisions[change.id];
-                                    const top =
-                                        ((idx + 0.5) / changes.length) * 100;
+                                    const top = ((idx + 0.5) / changes.length) * 100;
 
                                     let dotClass = "review-minimap__dot";
                                     if (decision === true)

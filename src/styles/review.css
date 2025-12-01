@@ -580,3 +580,33 @@
     gap: 0.15rem;
     white-space: nowrap;
 }
+
+/* Collapsed unchanged sections in ReviewableDiff */
+.review-collapsed {
+    display: block;
+    margin: 4px 0;
+}
+
+.review-collapsed__btn {
+    font-size: 12px;
+    color: #6b7280;
+    background: #f3f4f6;
+    border-radius: 999px;
+    border: 1px dashed #d1d5db;
+    padding: 2px 10px;
+    cursor: pointer;
+}
+
+.review-collapsed__btn:hover {
+    background: #e5e7eb;
+}
+
+.review-unchanged-block {
+    display: block;
+    margin: 4px 0;
+}
+
+.review-collapsed__btn--inline {
+    margin-bottom: 4px;
+    margin-right: 6px;
+}
