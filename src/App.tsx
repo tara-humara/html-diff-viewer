@@ -232,37 +232,15 @@ const App: React.FC = () => {
   };
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "32px",
-        fontFamily:
-          "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        background: "var(--color-bg)",
-      }}
-    >
+    <main className="app-shell">
       <div style={{ width: "100%" }}>
         {/* HEADER */}
-        <header style={{ marginBottom: "20px" }}>
-          <h1
-            style={{
-              fontSize: "26px",
-              marginBottom: "8px",
-              color: "#0b2e4e",
-              fontWeight: 700,
-            }}
-          >
-            HTML review workspace
-          </h1>
+        <header className="app-header">
+          <h1 className="app-header-title">Smart HTML Review Workspace</h1>
 
-          <p
-            style={{
-              marginBottom: "14px",
-              color: "#6b7280",
-              fontSize: "14px",
-            }}
-          >
-            Compare and validate AI-generated updates before merging them.
+          <p className="app-header-subtitle">
+            Review AI-generated edits, compare versions, and produce final
+            validated HTML.
           </p>
 
           {/* Input source + controls */}
@@ -465,7 +443,9 @@ const App: React.FC = () => {
                 }}
               >
                 {/* Left: source HTML */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                >
                   <div
                     style={{
                       display: "flex",
