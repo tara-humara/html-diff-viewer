@@ -19,137 +19,6 @@ body {
   min-height: 100vh;
 }
 
-/* Header */
-.app-header {
-  margin-bottom: 24px;
-  text-align: center;
-}
-
-.app-header-title {
-  font-size: 32px;
-  line-height: 1.2;
-  font-weight: 700;
-  color: #0b2e4e;
-  margin: 0 0 6px 0;
-}
-
-.app-header-subtitle {
-  margin: 0 0 24px 0;
-  /* 👈 adds space below the subtitle */
-  font-size: 15px;
-  color: #6b7280;
-}
-
-/* Generic card style (your sections already use inline, but this is here for reuse) */
-.card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 20px 24px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-  border: 1px solid #e5e7eb;
-  margin-bottom: 20px;
-}
-
-/* Optional button styles if you want to reuse them later */
-.btn-primary {
-  background: #2563eb;
-  color: #fff;
-  border-radius: 999px;
-  padding: 8px 16px;
-  border: none;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.15s;
-}
-
-.btn-primary:hover {
-  background: #1e4fb8;
-}
-
-/* Softer diff colors if your diff components use these classes */
-.diff-added {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-}
-
-.diff-removed {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-}
-
-/* ------------------------------- */
-/* Layout shell */
-/* ------------------------------- */
-.app-shell {
-  min-height: 100vh;
-  padding: 32px;
-}
-
-/* ------------------------------- */
-/* Header styling */
-/* ------------------------------- */
-.app-header {
-  margin-bottom: 32px;
-  text-align: center;
-}
-
-.app-header-title {
-  font-size: 34px;
-  margin: 0 0 10px 0;
-  font-weight: 700;
-  color: #0b2e4e;
-}
-
-.app-header-subtitle {
-  margin: 0 0 28px 0;
-  font-size: 16px;
-  color: #6b7280;
-}
-
-/* Input area layout */
-.input-section {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* Row with "Input source:" label */
-.input-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
-}
-
-/* Label with radio */
-.radio-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #374151;
-  font-weight: 500;
-}
-
-/* Example dropdown label */
-.example-label {
-  font-size: 14px;
-  color: #374151;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Dropdown style */
-.dropdown {
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  font-size: 14px;
-}
-
 /* -------------------------------------- */
 /* Header layout */
 /* -------------------------------------- */
@@ -317,4 +186,135 @@ body {
 
 .ai-status-error {
   color: #dc2626;
+}
+
+/* -------------------------------------- */
+/* Workspace + tabs */
+/* -------------------------------------- */
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Main tabs: View diff / Review code / Review WYSIWYG */
+.main-tabs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tab {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab--active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+/* Diff sub-toolbar: unified vs side-by-side + granularity */
+.diff-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.diff-view-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.diff-view-tab {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  cursor: pointer;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.diff-view-tab--active {
+  border-color: #6b7280;
+  background: #e5e7eb;
+  color: #111827;
+  font-weight: 500;
+}
+
+.granularity-label {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.granularity-select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 13px;
+}
+
+/* -------------------------------------- */
+/* Generic card & diff styling */
+/* -------------------------------------- */
+
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e5e7eb;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+  border-radius: 999px;
+  padding: 8px 16px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover {
+  background: #1e4fb8;
+}
+
+.diff-added {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.diff-removed {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
 }

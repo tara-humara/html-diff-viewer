@@ -107,50 +107,13 @@ const App: React.FC = () => {
         ? fileModifiedText
         : aiDraftText || aiSourceText;
 
-  // Shared card style
+  // Shared card style (we'll refactor this later)
   const cardStyle: React.CSSProperties = {
     borderRadius: "10px",
     background: "#ffffff",
     border: "1px solid #e5e7eb",
     padding: "16px",
     boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
-  };
-
-  // Main tabs
-  const tabBase: React.CSSProperties = {
-    padding: "6px 14px",
-    borderRadius: "999px",
-    border: "1px solid transparent",
-    background: "transparent",
-    cursor: "pointer",
-    fontSize: "14px",
-    color: "#4b5563",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-  };
-  const tabActive: React.CSSProperties = {
-    borderColor: "#2563eb",
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    fontWeight: 600,
-  };
-
-  // Sub-tabs (inside "View diff")
-  const subTab: React.CSSProperties = {
-    padding: "4px 10px",
-    borderRadius: "999px",
-    border: "1px solid #d1d5db",
-    background: "#f9fafb",
-    cursor: "pointer",
-    fontSize: "13px",
-    color: "#4b5563",
-  };
-  const subTabActive: React.CSSProperties = {
-    borderColor: "#6b7280",
-    background: "#e5e7eb",
-    color: "#111827",
-    fontWeight: 500,
   };
 
   // file handlers
@@ -239,7 +202,8 @@ const App: React.FC = () => {
           <h1 className="app-header-title">Smart HTML Review Workspace</h1>
 
           <p className="app-header-subtitle">
-            Review AI-generated edits, compare versions, and produce final validated HTML.
+            Review AI-generated edits, compare versions, and produce final
+            validated HTML.
           </p>
 
           <section className="input-section">
@@ -281,9 +245,7 @@ const App: React.FC = () => {
               </label>
             </div>
 
-            {/* -------------------------------------- */}
             {/* Example mode */}
-            {/* -------------------------------------- */}
             {inputMode === "example" && (
               <div className="example-select-row">
                 Input text:
@@ -301,35 +263,43 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {/* -------------------------------------- */}
             {/* Upload files mode */}
-            {/* -------------------------------------- */}
             {inputMode === "files" && (
               <div className="upload-grid">
                 <div className="upload-col">
                   Original HTML file
-                  <input type="file" accept=".html,.htm,.txt"
+                  <input
+                    type="file"
+                    accept=".html,.htm,.txt"
                     onChange={handleFileChange("original")}
                   />
-                  {fileOriginalName && <span className="upload-note">Loaded: {fileOriginalName}</span>}
+                  {fileOriginalName && (
+                    <span className="upload-note">
+                      Loaded: {fileOriginalName}
+                    </span>
+                  )}
                 </div>
 
                 <div className="upload-col">
                   Modified HTML file
-                  <input type="file" accept=".html,.htm,.txt"
+                  <input
+                    type="file"
+                    accept=".html,.htm,.txt"
                     onChange={handleFileChange("modified")}
                   />
-                  {fileModifiedName && <span className="upload-note">Loaded: {fileModifiedName}</span>}
+                  {fileModifiedName && (
+                    <span className="upload-note">
+                      Loaded: {fileModifiedName}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* -------------------------------------- */}
             {/* AI draft mode */}
-            {/* -------------------------------------- */}
             {inputMode === "ai" && (
               <div className="ai-grid">
-                {/* Left column (original HTML) */}
+                {/* Left: source HTML */}
                 <div className="ai-col">
                   <span className="ai-label">Original HTML</span>
 
@@ -357,7 +327,7 @@ const App: React.FC = () => {
                   />
                 </div>
 
-                {/* Right column (instructions + button) */}
+                {/* Right: instruction + generate button */}
                 <div className="ai-col">
                   <span className="ai-label">Instruction for AI</span>
 
@@ -385,36 +355,23 @@ const App: React.FC = () => {
                   )}
 
                   {aiError && (
-                    <span className="ai-status ai-status-error">{aiError}</span>
+                    <span className="ai-status ai-status-error">
+                      {aiError}
+                    </span>
                   )}
                 </div>
               </div>
             )}
           </section>
         </header>
+
         {/* WORKSPACE SECTIONS */}
-        <section
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px",
-            width: "100%",
-          }}
-        >
-          {/* MAIN MENU */}
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              alignItems: "center",
-              marginBottom: "8px",
-              borderBottom: "1px solid #e5e7eb",
-              paddingBottom: "8px",
-            }}
-          >
+        <section className="workspace">
+          {/* MAIN MENU TABS */}
+          <div className="main-tabs">
             <button
               type="button"
-              style={{ ...tabBase, ...(mainView === "diff" ? tabActive : {}) }}
+              className={`tab ${mainView === "diff" ? "tab--active" : ""}`}
               onClick={() => setMainView("diff")}
             >
               <AdjustmentsHorizontalIcon width={18} height={18} />
@@ -423,10 +380,8 @@ const App: React.FC = () => {
 
             <button
               type="button"
-              style={{
-                ...tabBase,
-                ...(mainView === "review-code" ? tabActive : {}),
-              }}
+              className={`tab ${mainView === "review-code" ? "tab--active" : ""
+                }`}
               onClick={() => setMainView("review-code")}
             >
               <DocumentTextIcon width={18} height={18} />
@@ -435,10 +390,8 @@ const App: React.FC = () => {
 
             <button
               type="button"
-              style={{
-                ...tabBase,
-                ...(mainView === "review-wysiwyg" ? tabActive : {}),
-              }}
+              className={`tab ${mainView === "review-wysiwyg" ? "tab--active" : ""
+                }`}
               onClick={() => setMainView("review-wysiwyg")}
             >
               <EyeIcon width={18} height={18} />
@@ -448,24 +401,13 @@ const App: React.FC = () => {
 
           {/* SUB-MENU: only for "View diff" */}
           {mainView === "diff" && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "8px",
-                marginBottom: "4px",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
+            <div className="diff-toolbar">
               {/* Left: which diff view */}
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <div className="diff-view-tabs">
                 <button
                   type="button"
-                  style={{
-                    ...subTab,
-                    ...(diffView === "unified" ? subTabActive : {}),
-                  }}
+                  className={`diff-view-tab ${diffView === "unified" ? "diff-view-tab--active" : ""
+                    }`}
                   onClick={() => setDiffView("unified")}
                 >
                   Unified text diff
@@ -473,10 +415,8 @@ const App: React.FC = () => {
 
                 <button
                   type="button"
-                  style={{
-                    ...subTab,
-                    ...(diffView === "side-by-side" ? subTabActive : {}),
-                  }}
+                  className={`diff-view-tab ${diffView === "side-by-side" ? "diff-view-tab--active" : ""
+                    }`}
                   onClick={() => setDiffView("side-by-side")}
                 >
                   Side-by-side text diff
@@ -484,27 +424,12 @@ const App: React.FC = () => {
               </div>
 
               {/* Right: granularity selector */}
-              <label
-                style={{
-                  fontSize: "14px",
-                  color: "#374151",
-                  fontWeight: 500,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  marginTop: "4px",
-                }}
-              >
+              <label className="granularity-label">
                 Granularity:
                 <select
                   value={mode}
                   onChange={(e) => setMode(e.target.value as DiffMode)}
-                  style={{
-                    padding: "4px 8px",
-                    borderRadius: "6px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "13px",
-                  }}
+                  className="granularity-select"
                 >
                   <option value="chars">Characters</option>
                   <option value="words">Words</option>
