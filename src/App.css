@@ -318,3 +318,42 @@ body {
   background: #fef2f2;
   border: 1px solid #fecaca;
 }
+
+/* Inner layout wrapper */
+.app-inner {
+  width: 100%;
+}
+
+/* Section title (icon + text) */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.section-title-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0b2e4e;
+}
+
+.section-title-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0b2e4e;
+  margin: 0;
+}
+
+/* Shorter textarea variant */
+.textarea--small {
+  min-height: 80px;
+}
+
+/* Hidden file input */
+.file-input-hidden {
+  display: none;
+}

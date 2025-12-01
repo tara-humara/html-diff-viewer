@@ -25,37 +25,9 @@ const SectionTitle: React.FC<{
   title: string;
   icon: React.ReactNode;
 }> = ({ title, icon }) => (
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      marginBottom: "6px",
-    }}
-  >
-    <div
-      style={{
-        width: "20px",
-        height: "20px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#0b2e4e",
-      }}
-    >
-      {icon}
-    </div>
-
-    <h2
-      style={{
-        fontSize: "18px",
-        fontWeight: 700,
-        color: "#0b2e4e",
-        margin: 0,
-      }}
-    >
-      {title}
-    </h2>
+  <div className="section-title">
+    <div className="section-title-icon">{icon}</div>
+    <h2 className="section-title-text">{title}</h2>
   </div>
 );
 
@@ -106,15 +78,6 @@ const App: React.FC = () => {
       : inputMode === "files"
         ? fileModifiedText
         : aiDraftText || aiSourceText;
-
-  // Shared card style (we'll refactor this later)
-  const cardStyle: React.CSSProperties = {
-    borderRadius: "10px",
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    padding: "16px",
-    boxShadow: "0 4px 10px rgba(15,23,42,0.05)",
-  };
 
   // file handlers
   const handleFileChange =
@@ -196,7 +159,7 @@ const App: React.FC = () => {
 
   return (
     <main className="app-shell">
-      <div style={{ width: "100%" }}>
+      <div className="app-inner">
         {/* HEADER */}
         <header className="app-header">
           <h1 className="app-header-title">Smart HTML Review Workspace</h1>
@@ -315,7 +278,7 @@ const App: React.FC = () => {
                     ref={aiFileInputRef}
                     type="file"
                     accept=".html,.htm,.txt"
-                    style={{ display: "none" }}
+                    className="file-input-hidden"
                     onChange={handleAiSourceFileUpload}
                   />
 
@@ -334,9 +297,8 @@ const App: React.FC = () => {
                   <textarea
                     value={aiInstruction}
                     onChange={(e) => setAiInstruction(e.target.value)}
-                    className="textarea"
+                    className="textarea textarea--small"
                     placeholder="Describe how the AI should improve the HTML."
-                    style={{ minHeight: "80px" }}
                   />
 
                   <button
@@ -441,7 +403,7 @@ const App: React.FC = () => {
 
           {/* REVIEW CODE */}
           {mainView === "review-code" && (
-            <section style={cardStyle}>
+            <section className="card">
               <SectionTitle
                 title="Review suggestions (raw HTML)"
                 icon={<DocumentTextIcon width={20} height={20} />}
@@ -453,7 +415,7 @@ const App: React.FC = () => {
 
           {/* REVIEW WYSIWYG */}
           {mainView === "review-wysiwyg" && (
-            <section style={cardStyle}>
+            <section className="card">
               <SectionTitle
                 title="Visual HTML (WYSIWYG)"
                 icon={<EyeIcon width={20} height={20} />}
@@ -465,7 +427,7 @@ const App: React.FC = () => {
 
           {/* UNIFIED TEXT DIFF */}
           {mainView === "diff" && diffView === "unified" && (
-            <section style={cardStyle}>
+            <section className="card">
               <SectionTitle
                 title="Unified text diff"
                 icon={<AdjustmentsHorizontalIcon width={20} height={20} />}
@@ -481,7 +443,7 @@ const App: React.FC = () => {
 
           {/* SIDE-BY-SIDE TEXT DIFF */}
           {mainView === "diff" && diffView === "side-by-side" && (
-            <section style={cardStyle}>
+            <section className="card">
               <SectionTitle
                 title="Side-by-side text diff"
                 icon={<Squares2X2Icon width={20} height={20} />}
