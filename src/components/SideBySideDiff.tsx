@@ -1,5 +1,5 @@
 // src/components/SideBySideDiff.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { diffLines, diffWords, diffChars } from "diff";
 import type { DiffMode } from "./TextDiff";
 import "../styles/diff.css";
@@ -26,8 +26,10 @@ type Row = {
     rightLine?: number;
 };
 
+const COLLAPSE_THRESHOLD = 3;
+
 /**
- * Side-by-side diff.
+ * Side-by-side diff with collapsible unchanged blocks.
  * - Left: original
  * - Right: modified
  * - Removed pieces only on the left (red)
@@ -88,6 +90,145 @@ export const SideBySideDiff: React.FC<SideBySideDiffProps> = ({
         });
     });
 
+    // track which unchanged blocks are expanded
+    const [expandedGroups, setExpandedGroups] = useState<
+        Record<string, boolean>
+    >({});
+
+    useEffect(() => {
+        setExpandedGroups({});
+    }, [original, modified, mode]);
+
+    const renderNormalRow = (row: Row, key: React.Key) => {
+        const leftBarClass =
+            row.type === "removed"
+                ? "diff-bar diff-bar--removed"
+                : "diff-bar diff-bar--unchanged";
+
+        const rightBarClass =
+            row.type === "added"
+                ? "diff-bar diff-bar--added"
+                : "diff-bar diff-bar--unchanged";
+
+        const leftContentKind: RowType =
+            row.type === "removed" ? "removed" : "unchanged";
+        const rightContentKind: RowType =
+            row.type === "added" ? "added" : "unchanged";
+
+        const leftContentClass = `diff-sbs-content diff-sbs-content--${leftContentKind}`;
+        const rightContentClass = `diff-sbs-content diff-sbs-content--${rightContentKind}`;
+
+        return (
+            <div key={key} className="diff-sbs-row">
+                {/* Left bar */}
+                <div className={leftBarClass} />
+
+                {/* Left line number */}
+                <div className="diff-sbs-line-number diff-sbs-line-number--left">
+                    {row.leftLine ?? ""}
+                </div>
+
+                {/* Left content */}
+                <div className={leftContentClass}>
+                    {row.left === "" ? "\u00A0" : row.left}
+                </div>
+
+                {/* Right bar */}
+                <div className={rightBarClass} />
+
+                {/* Right line number */}
+                <div className="diff-sbs-line-number diff-sbs-line-number--right">
+                    {row.rightLine ?? ""}
+                </div>
+
+                {/* Right content */}
+                <div className={rightContentClass}>
+                    {row.right === "" ? "\u00A0" : row.right}
+                </div>
+            </div>
+        );
+    };
+
+    const rendered: React.ReactNode[] = [];
+
+    // collapse runs of ≥ COLLAPSE_THRESHOLD unchanged rows
+    for (let i = 0; i < rows.length;) {
+        const row = rows[i];
+
+        if (row.type !== "unchanged") {
+            rendered.push(renderNormalRow(row, i));
+            i++;
+            continue;
+        }
+
+        // collect run of unchanged rows
+        let j = i;
+        while (j < rows.length && rows[j].type === "unchanged") j++;
+        const count = j - i;
+
+        if (count <= COLLAPSE_THRESHOLD) {
+            for (let k = i; k < j; k++) rendered.push(renderNormalRow(rows[k], k));
+        } else {
+            const groupId = `${i}-${j}`;
+            const expanded = !!expandedGroups[groupId];
+
+            if (!expanded) {
+                // collapsed summary row
+                rendered.push(
+                    <div
+                        key={groupId}
+                        className="diff-sbs-row diff-sbs-row--collapsed"
+                    >
+                        <div className="diff-bar diff-bar--unchanged" />
+                        <div className="diff-sbs-line-number diff-sbs-line-number--left" />
+                        <div className="diff-sbs-content diff-sbs-content--collapsed">
+                            <button
+                                type="button"
+                                className="diff-sbs-toggle"
+                                onClick={() =>
+                                    setExpandedGroups((prev) => ({ ...prev, [groupId]: true }))
+                                }
+                            >
+                                Show {count} unchanged line{count > 1 ? "s" : ""}
+                            </button>
+                        </div>
+                        <div className="diff-bar diff-bar--unchanged" />
+                        <div className="diff-sbs-line-number diff-sbs-line-number--right" />
+                        <div className="diff-sbs-content diff-sbs-content--collapsed-right" />
+                    </div>
+                );
+            } else {
+                for (let k = i; k < j; k++) rendered.push(renderNormalRow(rows[k], k));
+
+                rendered.push(
+                    <div
+                        key={`${groupId}-hide`}
+                        className="diff-sbs-row diff-sbs-row--collapsed"
+                    >
+                        <div className="diff-bar diff-bar--unchanged" />
+                        <div className="diff-sbs-line-number diff-sbs-line-number--left" />
+                        <div className="diff-sbs-content diff-sbs-content--collapsed">
+                            <button
+                                type="button"
+                                className="diff-sbs-toggle"
+                                onClick={() =>
+                                    setExpandedGroups((prev) => ({ ...prev, [groupId]: false }))
+                                }
+                            >
+                                Hide unchanged lines
+                            </button>
+                        </div>
+                        <div className="diff-bar diff-bar--unchanged" />
+                        <div className="diff-sbs-line-number diff-sbs-line-number--right" />
+                        <div className="diff-sbs-content diff-sbs-content--collapsed-right" />
+                    </div>
+                );
+            }
+        }
+
+        i = j;
+    }
+
     return (
         <div className="diff-container">
             {/* Header */}
@@ -103,55 +244,7 @@ export const SideBySideDiff: React.FC<SideBySideDiffProps> = ({
             </div>
 
             {/* Rows */}
-            {rows.map((row, idx) => {
-                const leftBarClass =
-                    row.type === "removed"
-                        ? "diff-bar diff-bar--removed"
-                        : "diff-bar diff-bar--unchanged";
-
-                const rightBarClass =
-                    row.type === "added"
-                        ? "diff-bar diff-bar--added"
-                        : "diff-bar diff-bar--unchanged";
-
-                const leftContentKind: RowType =
-                    row.type === "removed" ? "removed" : "unchanged";
-                const rightContentKind: RowType =
-                    row.type === "added" ? "added" : "unchanged";
-
-                const leftContentClass = `diff-sbs-content diff-sbs-content--${leftContentKind}`;
-                const rightContentClass = `diff-sbs-content diff-sbs-content--${rightContentKind}`;
-
-                return (
-                    <div key={idx} className="diff-sbs-row">
-                        {/* Left bar */}
-                        <div className={leftBarClass} />
-
-                        {/* Left line number */}
-                        <div className="diff-sbs-line-number diff-sbs-line-number--left">
-                            {row.leftLine ?? ""}
-                        </div>
-
-                        {/* Left content */}
-                        <div className={leftContentClass}>
-                            {row.left === "" ? "\u00A0" : row.left}
-                        </div>
-
-                        {/* Right bar */}
-                        <div className={rightBarClass} />
-
-                        {/* Right line number */}
-                        <div className="diff-sbs-line-number diff-sbs-line-number--right">
-                            {row.rightLine ?? ""}
-                        </div>
-
-                        {/* Right content */}
-                        <div className={rightContentClass}>
-                            {row.right === "" ? "\u00A0" : row.right}
-                        </div>
-                    </div>
-                );
-            })}
+            {rendered}
         </div>
     );
 };

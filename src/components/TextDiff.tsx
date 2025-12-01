@@ -1,5 +1,5 @@
 // src/components/TextDiff.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { diffWords, diffChars, diffLines } from "diff";
 import "../styles/diff.css";
 
@@ -81,6 +81,8 @@ const renderLineWithHighlights = (line: string, parts: DiffPart[]): string => {
 
 type LineKind = "added" | "removed" | "mixed" | "unchanged";
 
+const COLLAPSE_THRESHOLD = 3; // same idea as review views
+
 /**
  * Stateless component that displays a diff between two raw HTML strings.
  * Granularity can be characters, words, or lines.
@@ -92,60 +94,148 @@ export const TextDiff: React.FC<TextDiffProps> = ({
 }) => {
     const parts = getDiffParts(original, modified, mode);
 
-    // --------- SPECIAL CASE: PURE LINE MODE (line-level diff) ---------
-    if (mode === "lines") {
-        // Flatten parts into individual lines with their added/removed flags
-        const lineRows: { line: string; added?: boolean; removed?: boolean }[] =
-            [];
+    // groups of unchanged lines that are expanded (key = "start-end")
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+        {}
+    );
 
+    useEffect(() => {
+        setExpandedGroups({});
+    }, [original, modified, mode]);
+
+    // ---------- MODE: LINES (pure line diff with collapsing) ----------
+    if (mode === "lines") {
+        const lineRows: { line: string; kind: LineKind; index: number }[] = [];
+
+        // Flatten parts into individual lines with their flags
+        let index = 0;
         parts.forEach((part) => {
             const lines = part.value.split("\n");
-
             lines.forEach((line, idx) => {
                 // Skip trailing empty line caused by final '\n'
                 if (idx === lines.length - 1 && line === "") return;
-                lineRows.push({ line, added: part.added, removed: part.removed });
+
+                const kind: LineKind = part.added
+                    ? "added"
+                    : part.removed
+                        ? "removed"
+                        : "unchanged";
+
+                lineRows.push({ line, kind, index });
+                index++;
             });
         });
 
-        return (
-            <div className="diff-container">
-                {lineRows.map((row, i) => {
-                    const kind: LineKind = row.added
-                        ? "added"
-                        : row.removed
-                            ? "removed"
-                            : "unchanged";
+        const rendered: React.ReactNode[] = [];
 
-                    const rowClass = `diff-row diff-row--${kind}`;
-                    const barClass = `diff-bar diff-bar--${kind}`;
+        const renderNormalLine = (row: (typeof lineRows)[number]) => {
+            const visualKind =
+                row.kind === "added"
+                    ? "added"
+                    : row.kind === "removed"
+                        ? "removed"
+                        : "unchanged";
 
-                    return (
-                        <div key={i} className={rowClass}>
-                            <div className={barClass} />
-                            <div className="diff-line-number">{i + 1}</div>
-                            <div className="diff-line-content">
-                                {row.line === "" ? "\u00A0" : row.line}
+            const rowClass = `diff-row diff-row--${visualKind}`;
+            const barClass = `diff-bar diff-bar--${visualKind}`;
+
+            return (
+                <div key={row.index} className={rowClass}>
+                    <div className={barClass} />
+                    <div className="diff-line-number">{row.index + 1}</div>
+                    <div className="diff-line-content">
+                        {row.line === "" ? "\u00A0" : row.line}
+                    </div>
+                </div>
+            );
+        };
+
+        for (let i = 0; i < lineRows.length;) {
+            const row = lineRows[i];
+
+            if (row.kind !== "unchanged") {
+                rendered.push(renderNormalLine(row));
+                i++;
+                continue;
+            }
+
+            // collect run of unchanged lines
+            let j = i;
+            while (j < lineRows.length && lineRows[j].kind === "unchanged") j++;
+            const count = j - i;
+
+            if (count <= COLLAPSE_THRESHOLD) {
+                for (let k = i; k < j; k++) rendered.push(renderNormalLine(lineRows[k]));
+            } else {
+                const groupId = `${i}-${j}`;
+                const expanded = !!expandedGroups[groupId];
+
+                if (!expanded) {
+                    // collapsed summary row
+                    rendered.push(
+                        <div
+                            key={groupId}
+                            className="diff-row diff-row--skipped"
+                        >
+                            <div className="diff-bar diff-bar--unchanged" />
+                            <div className="diff-line-number" />
+                            <div className="diff-line-content diff-line-content--skipped">
+                                <button
+                                    type="button"
+                                    className="diff-line-toggle"
+                                    onClick={() =>
+                                        setExpandedGroups((prev) => ({ ...prev, [groupId]: true }))
+                                    }
+                                >
+                                    Show {count} unchanged line{count > 1 ? "s" : ""}
+                                </button>
                             </div>
                         </div>
                     );
-                })}
-            </div>
-        );
+                } else {
+                    for (let k = i; k < j; k++) rendered.push(renderNormalLine(lineRows[k]));
+                    rendered.push(
+                        <div
+                            key={`${groupId}-hide`}
+                            className="diff-row diff-row--skipped"
+                        >
+                            <div className="diff-bar diff-bar--unchanged" />
+                            <div className="diff-line-number" />
+                            <div className="diff-line-content diff-line-content--skipped">
+                                <button
+                                    type="button"
+                                    className="diff-line-toggle"
+                                    onClick={() =>
+                                        setExpandedGroups((prev) => ({ ...prev, [groupId]: false }))
+                                    }
+                                >
+                                    Hide unchanged lines
+                                </button>
+                            </div>
+                        </div>
+                    );
+                }
+            }
+
+            i = j;
+        }
+
+        return <div className="diff-container">{rendered}</div>;
     }
 
-    // --------- DEFAULT: CHARS / WORDS UNIFIED VIEW WITH COLLAPSE ---------
+    // ---------- DEFAULT: CHARS / WORDS UNIFIED VIEW WITH COLLAPSE ----------
 
     // Recreate full diff text so we can split by line
     const diffText = parts.map((p) => p.value).join("");
-    const diffLines = diffText.split("\n");
+    const diffLinesArr = diffText.split("\n");
 
     const classifyLine = (line: string): LineKind => {
         const trimmed = line.trim();
         if (!trimmed) return "unchanged";
 
         const hasAdded = parts.some(
-            (p) => p.added && p.value.trim() !== "" && line.includes(p.value.trim())
+            (p) =>
+                p.added && p.value.trim() !== "" && line.includes(p.value.trim())
         );
         const hasRemoved = parts.some(
             (p) =>
@@ -158,118 +248,107 @@ export const TextDiff: React.FC<TextDiffProps> = ({
         return "unchanged";
     };
 
-    const lineKinds: LineKind[] = diffLines.map((line) => classifyLine(line));
+    const rows = diffLinesArr.map((line, index) => ({
+        line,
+        kind: classifyLine(line),
+        index,
+    }));
 
-    type RenderRow =
-        | {
-            kind: "context";
-            line: string;
-            lineIndex: number;
-            meta: LineKind;
-        }
-        | {
-            kind: "skipped";
-            startIndex: number;
-            endIndex: number;
-        };
+    const rendered: React.ReactNode[] = [];
 
-    const rows: RenderRow[] = [];
-    const COLLAPSE_THRESHOLD = 4; // min unchanged lines to collapse
+    const renderNormalLine = (row: (typeof rows)[number]) => {
+        const visualKind =
+            row.kind === "added" || row.kind === "mixed"
+                ? "added"
+                : row.kind === "removed"
+                    ? "removed"
+                    : "unchanged";
 
-    let i = 0;
-    while (i < diffLines.length) {
-        if (lineKinds[i] === "unchanged") {
-            let j = i;
-            while (j < diffLines.length && lineKinds[j] === "unchanged") {
-                j++;
-            }
-            const blockLength = j - i;
+        const rowClass = `diff-row diff-row--${visualKind}`;
+        const barClass = `diff-bar diff-bar--${visualKind}`;
 
-            if (blockLength > COLLAPSE_THRESHOLD) {
-                // first unchanged line
-                rows.push({
-                    kind: "context",
-                    line: diffLines[i],
-                    lineIndex: i,
-                    meta: "unchanged",
-                });
-                // collapsed middle lines
-                rows.push({
-                    kind: "skipped",
-                    startIndex: i + 1,
-                    endIndex: j - 2 >= i + 1 ? j - 2 : i + 1,
-                });
-                // last unchanged line
-                rows.push({
-                    kind: "context",
-                    line: diffLines[j - 1],
-                    lineIndex: j - 1,
-                    meta: "unchanged",
-                });
-            } else {
-                // keep all unchanged lines visible
-                for (let k = i; k < j; k++) {
-                    rows.push({
-                        kind: "context",
-                        line: diffLines[k],
-                        lineIndex: k,
-                        meta: "unchanged",
-                    });
-                }
-            }
+        return (
+            <div key={row.index} className={rowClass}>
+                <div className={barClass} />
+                <div className="diff-line-number">{row.index + 1}</div>
+                <div
+                    className="diff-line-content"
+                    dangerouslySetInnerHTML={{
+                        __html: renderLineWithHighlights(row.line, parts),
+                    }}
+                />
+            </div>
+        );
+    };
 
-            i = j;
-        } else {
-            rows.push({
-                kind: "context",
-                line: diffLines[i],
-                lineIndex: i,
-                meta: lineKinds[i],
-            });
+    for (let i = 0; i < rows.length;) {
+        const row = rows[i];
+
+        if (row.kind !== "unchanged") {
+            rendered.push(renderNormalLine(row));
             i++;
+            continue;
         }
-    }
 
-    return (
-        <div className="diff-container">
-            {rows.map((row, idx) => {
-                if (row.kind === "skipped") {
-                    const hiddenCount = row.endIndex - row.startIndex + 1;
-                    if (hiddenCount <= 0) return null;
+        // collect run of unchanged lines
+        let j = i;
+        while (j < rows.length && rows[j].kind === "unchanged") j++;
+        const count = j - i;
 
-                    return (
-                        <div
-                            key={`skipped-${idx}`}
-                            className="diff-row diff-row--skipped"
-                        >
-                            <div className="diff-bar diff-bar--unchanged" />
-                            <div className="diff-line-number" />
-                            <div className="diff-line-content diff-line-content--skipped">
-                                … {hiddenCount} unchanged line
-                                {hiddenCount > 1 ? "s" : ""} …
-                            </div>
+        if (count <= COLLAPSE_THRESHOLD) {
+            for (let k = i; k < j; k++) rendered.push(renderNormalLine(rows[k]));
+        } else {
+            const groupId = `${i}-${j}`;
+            const expanded = !!expandedGroups[groupId];
+
+            if (!expanded) {
+                rendered.push(
+                    <div
+                        key={groupId}
+                        className="diff-row diff-row--skipped"
+                    >
+                        <div className="diff-bar diff-bar--unchanged" />
+                        <div className="diff-line-number" />
+                        <div className="diff-line-content diff-line-content--skipped">
+                            <button
+                                type="button"
+                                className="diff-line-toggle"
+                                onClick={() =>
+                                    setExpandedGroups((prev) => ({ ...prev, [groupId]: true }))
+                                }
+                            >
+                                Show {count} unchanged line{count > 1 ? "s" : ""}
+                            </button>
                         </div>
-                    );
-                }
-
-                const { line, lineIndex, meta } = row;
-
-                const rowClass = `diff-row diff-row--${meta}`;
-                const barClass = `diff-bar diff-bar--${meta}`;
-
-                return (
-                    <div key={`line-${idx}-${lineIndex}`} className={rowClass}>
-                        <div className={barClass} />
-                        <div className="diff-line-number">{lineIndex + 1}</div>
-                        <div
-                            className="diff-line-content"
-                            dangerouslySetInnerHTML={{
-                                __html: renderLineWithHighlights(line, parts),
-                            }}
-                        />
                     </div>
                 );
-            })}
-        </div>
-    );
+            } else {
+                for (let k = i; k < j; k++) rendered.push(renderNormalLine(rows[k]));
+                rendered.push(
+                    <div
+                        key={`${groupId}-hide`}
+                        className="diff-row diff-row--skipped"
+                    >
+                        <div className="diff-bar diff-bar--unchanged" />
+                        <div className="diff-line-number" />
+                        <div className="diff-line-content diff-line-content--skipped">
+                            <button
+                                type="button"
+                                className="diff-line-toggle"
+                                onClick={() =>
+                                    setExpandedGroups((prev) => ({ ...prev, [groupId]: false }))
+                                }
+                            >
+                                Hide unchanged lines
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+        }
+
+        i = j;
+    }
+
+    return <div className="diff-container">{rendered}</div>;
 };
