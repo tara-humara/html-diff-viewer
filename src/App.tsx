@@ -239,47 +239,15 @@ const App: React.FC = () => {
           <h1 className="app-header-title">Smart HTML Review Workspace</h1>
 
           <p className="app-header-subtitle">
-            Review AI-generated edits, compare versions, and produce final
-            validated HTML.
+            Review AI-generated edits, compare versions, and produce final validated HTML.
           </p>
 
-          {/* Input source + controls */}
-          <section
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-            }}
-          >
+          <section className="input-section">
             {/* Input source toggle */}
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "16px",
-                alignItems: "center",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "14px",
-                  color: "#374151",
-                  fontWeight: 500,
-                }}
-              >
-                Input source:
-              </span>
+            <div className="input-row">
+              <span className="input-label-title">Input source:</span>
 
-              <label
-                style={{
-                  fontSize: "14px",
-                  color: "#374151",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  cursor: "pointer",
-                }}
-              >
+              <label className="radio-label">
                 <input
                   type="radio"
                   name="input-mode"
@@ -290,16 +258,7 @@ const App: React.FC = () => {
                 Examples
               </label>
 
-              <label
-                style={{
-                  fontSize: "14px",
-                  color: "#374151",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  cursor: "pointer",
-                }}
-              >
+              <label className="radio-label">
                 <input
                   type="radio"
                   name="input-mode"
@@ -310,16 +269,7 @@ const App: React.FC = () => {
                 Upload files
               </label>
 
-              <label
-                style={{
-                  fontSize: "14px",
-                  color: "#374151",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  cursor: "pointer",
-                }}
-              >
+              <label className="radio-label">
                 <input
                   type="radio"
                   name="input-mode"
@@ -331,26 +281,16 @@ const App: React.FC = () => {
               </label>
             </div>
 
-            {/* Example selector / file inputs / AI controls */}
+            {/* -------------------------------------- */}
+            {/* Example mode */}
+            {/* -------------------------------------- */}
             {inputMode === "example" && (
-              <label
-                style={{
-                  fontSize: "14px",
-                  color: "#374151",
-                  fontWeight: 500,
-                }}
-              >
+              <div className="example-select-row">
                 Input text:
                 <select
                   value={selectedExample.id}
                   onChange={(e) => setSelectedExampleId(e.target.value)}
-                  style={{
-                    marginLeft: "8px",
-                    padding: "4px 8px",
-                    borderRadius: "6px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "14px",
-                  }}
+                  className="dropdown"
                 >
                   {examples.map((ex) => (
                     <option key={ex.id} value={ex.id}>
@@ -358,228 +298,100 @@ const App: React.FC = () => {
                     </option>
                   ))}
                 </select>
-              </label>
-            )}
-
-            {inputMode === "files" && (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "12px 24px",
-                }}
-              >
-                <label
-                  style={{
-                    fontSize: "14px",
-                    color: "#374151",
-                    fontWeight: 500,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
-                  }}
-                >
-                  Original HTML file
-                  <input
-                    type="file"
-                    accept=".html,.htm,.txt"
-                    onChange={handleFileChange("original")}
-                    style={{
-                      fontSize: "13px",
-                    }}
-                  />
-                  {fileOriginalName && (
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#6b7280",
-                      }}
-                    >
-                      Loaded: {fileOriginalName}
-                    </span>
-                  )}
-                </label>
-
-                <label
-                  style={{
-                    fontSize: "14px",
-                    color: "#374151",
-                    fontWeight: 500,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
-                  }}
-                >
-                  Modified HTML file
-                  <input
-                    type="file"
-                    accept=".html,.htm,.txt"
-                    onChange={handleFileChange("modified")}
-                    style={{
-                      fontSize: "13px",
-                    }}
-                  />
-                  {fileModifiedName && (
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#6b7280",
-                      }}
-                    >
-                      Loaded: {fileModifiedName}
-                    </span>
-                  )}
-                </label>
               </div>
             )}
 
+            {/* -------------------------------------- */}
+            {/* Upload files mode */}
+            {/* -------------------------------------- */}
+            {inputMode === "files" && (
+              <div className="upload-grid">
+                <div className="upload-col">
+                  Original HTML file
+                  <input type="file" accept=".html,.htm,.txt"
+                    onChange={handleFileChange("original")}
+                  />
+                  {fileOriginalName && <span className="upload-note">Loaded: {fileOriginalName}</span>}
+                </div>
+
+                <div className="upload-col">
+                  Modified HTML file
+                  <input type="file" accept=".html,.htm,.txt"
+                    onChange={handleFileChange("modified")}
+                  />
+                  {fileModifiedName && <span className="upload-note">Loaded: {fileModifiedName}</span>}
+                </div>
+              </div>
+            )}
+
+            {/* -------------------------------------- */}
+            {/* AI draft mode */}
+            {/* -------------------------------------- */}
             {inputMode === "ai" && (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr)",
-                  gap: "12px 20px",
-                  alignItems: "flex-start",
-                }}
-              >
-                {/* Left: source HTML */}
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
+              <div className="ai-grid">
+                {/* Left column (original HTML) */}
+                <div className="ai-col">
+                  <span className="ai-label">Original HTML</span>
+
+                  <button
+                    type="button"
+                    className="ai-upload-btn"
+                    onClick={() => aiFileInputRef.current?.click()}
                   >
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        color: "#374151",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Original HTML
-                    </span>
+                    Upload HTML file…
+                  </button>
 
-                    <button
-                      type="button"
-                      style={{
-                        fontSize: "12px",
-                        padding: "4px 10px",
-                        borderRadius: "999px",
-                        border: "1px solid #d1d5db",
-                        background: "#f9fafb",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => aiFileInputRef.current?.click()}
-                    >
-                      Upload HTML file…
-                    </button>
-
-                    <input
-                      ref={aiFileInputRef}
-                      type="file"
-                      accept=".html,.htm,.txt"
-                      style={{ display: "none" }}
-                      onChange={handleAiSourceFileUpload}
-                    />
-                  </div>
+                  <input
+                    ref={aiFileInputRef}
+                    type="file"
+                    accept=".html,.htm,.txt"
+                    style={{ display: "none" }}
+                    onChange={handleAiSourceFileUpload}
+                  />
 
                   <textarea
                     value={aiSourceText}
                     onChange={(e) => setAiSourceText(e.target.value)}
-                    placeholder="Paste the HTML here or use “Upload HTML file…” to load it from disk."
-                    style={{
-                      minHeight: "120px",
-                      padding: "8px",
-                      fontFamily: "monospace",
-                      fontSize: "13px",
-                      borderRadius: "6px",
-                      border: "1px solid #d1d5db",
-                      resize: "vertical",
-                    }}
+                    className="textarea"
+                    placeholder="Paste the HTML here or upload an HTML file."
                   />
                 </div>
 
-                {/* Right: instruction + generate button */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 6,
-                  }}
-                >
-                  <label
-                    style={{
-                      fontSize: "14px",
-                      color: "#374151",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Instruction for AI
-                  </label>
+                {/* Right column (instructions + button) */}
+                <div className="ai-col">
+                  <span className="ai-label">Instruction for AI</span>
+
                   <textarea
                     value={aiInstruction}
                     onChange={(e) => setAiInstruction(e.target.value)}
-                    placeholder="Describe how the AI should improve the HTML (tone, length, structure, disclaimers, etc.)."
-                    style={{
-                      minHeight: "80px",
-                      padding: "8px",
-                      fontSize: "13px",
-                      borderRadius: "6px",
-                      border: "1px solid #d1d5db",
-                      resize: "vertical",
-                    }}
+                    className="textarea"
+                    placeholder="Describe how the AI should improve the HTML."
+                    style={{ minHeight: "80px" }}
                   />
+
                   <button
                     type="button"
                     disabled={aiGenerating || !aiSourceText.trim()}
+                    className="ai-generate-btn"
                     onClick={handleGenerateAiDraft}
-                    style={{
-                      marginTop: "4px",
-                      alignSelf: "flex-start",
-                      padding: "6px 12px",
-                      borderRadius: "999px",
-                      border: "none",
-                      backgroundColor: aiGenerating ? "#9ca3af" : "#2563eb",
-                      color: "white",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      cursor: aiGenerating ? "default" : "pointer",
-                    }}
                   >
-                    {aiGenerating ? "Generating draft…" : "Generate AI draft"}
+                    {aiGenerating ? "Generating…" : "Generate AI draft"}
                   </button>
+
                   {aiDraftText && (
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#16a34a",
-                        marginTop: "2px",
-                      }}
-                    >
-                      Draft generated. Use the views below to review & validate.
+                    <span className="ai-status ai-status-success">
+                      Draft generated. Review it below.
                     </span>
                   )}
+
                   {aiError && (
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#dc2626",
-                        marginTop: "2px",
-                      }}
-                    >
-                      {aiError}
-                    </span>
+                    <span className="ai-status ai-status-error">{aiError}</span>
                   )}
                 </div>
               </div>
             )}
           </section>
         </header>
-
         {/* WORKSPACE SECTIONS */}
         <section
           style={{
