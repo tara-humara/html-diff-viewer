@@ -18,8 +18,9 @@ import {
 // main menu + sub menu types
 type MainView = "diff" | "review-code" | "review-wysiwyg";
 type DiffView = "unified" | "side-by-side";
+type InputMode = "example" | "files";
 
-// Section title with icon + text (no steps anymore)
+// Section title with icon + text
 const SectionTitle: React.FC<{
   title: string;
   icon: React.ReactNode;
@@ -60,15 +61,30 @@ const SectionTitle: React.FC<{
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<DiffMode>("words");
+
+  // input source state
+  const [inputMode, setInputMode] = useState<InputMode>("example");
   const [selectedExampleId, setSelectedExampleId] = useState(
     examples[0]?.id ?? ""
   );
 
+  const [fileOriginalName, setFileOriginalName] = useState("");
+  const [fileModifiedName, setFileModifiedName] = useState("");
+  const [fileOriginalText, setFileOriginalText] = useState("");
+  const [fileModifiedText, setFileModifiedText] = useState("");
+
+  // view state
   const [mainView, setMainView] = useState<MainView>("review-code");
   const [diffView, setDiffView] = useState<DiffView>("unified");
 
   const selectedExample =
     examples.find((ex) => ex.id === selectedExampleId) ?? examples[0];
+
+  // effective HTML that flows into all tools
+  const originalHtml =
+    inputMode === "example" ? selectedExample.original : fileOriginalText;
+  const modifiedHtml =
+    inputMode === "example" ? selectedExample.modified : fileModifiedText;
 
   useEffect(() => window.scrollTo(0, 0), []);
 
@@ -118,6 +134,27 @@ const App: React.FC = () => {
     fontWeight: 500,
   };
 
+  // file handlers
+  const handleFileChange =
+    (kind: "original" | "modified") =>
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const text = String(ev.target?.result ?? "");
+          if (kind === "original") {
+            setFileOriginalText(text);
+            setFileOriginalName(file.name);
+          } else {
+            setFileModifiedText(text);
+            setFileModifiedName(file.name);
+          }
+        };
+        reader.readAsText(file);
+      };
+
   return (
     <main
       style={{
@@ -152,40 +189,173 @@ const App: React.FC = () => {
             Compare and validate AI-generated updates before merging them.
           </p>
 
-          {/* Input selector */}
+          {/* Input source + controls */}
           <section
             style={{
               display: "flex",
-              flexWrap: "wrap",
-              gap: "16px",
-              alignItems: "center",
+              flexDirection: "column",
+              gap: "10px",
             }}
           >
-            <label
+            {/* Input source toggle */}
+            <div
               style={{
-                fontSize: "14px",
-                color: "#374151",
-                fontWeight: 500,
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "16px",
+                alignItems: "center",
               }}
             >
-              Input text:{" "}
-              <select
-                value={selectedExample.id}
-                onChange={(e) => setSelectedExampleId(e.target.value)}
+              <span
                 style={{
-                  padding: "4px 8px",
-                  borderRadius: "6px",
-                  border: "1px solid #d1d5db",
                   fontSize: "14px",
+                  color: "#374151",
+                  fontWeight: 500,
                 }}
               >
-                {examples.map((ex) => (
-                  <option key={ex.id} value={ex.id}>
-                    {ex.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                Input source:
+              </span>
+
+              <label
+                style={{
+                  fontSize: "14px",
+                  color: "#374151",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="input-mode"
+                  value="example"
+                  checked={inputMode === "example"}
+                  onChange={() => setInputMode("example")}
+                />
+                Examples
+              </label>
+
+              <label
+                style={{
+                  fontSize: "14px",
+                  color: "#374151",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="input-mode"
+                  value="files"
+                  checked={inputMode === "files"}
+                  onChange={() => setInputMode("files")}
+                />
+                Upload files
+              </label>
+            </div>
+
+            {/* Example selector OR file inputs */}
+            {inputMode === "example" ? (
+              <label
+                style={{
+                  fontSize: "14px",
+                  color: "#374151",
+                  fontWeight: 500,
+                }}
+              >
+                Input text:
+                <select
+                  value={selectedExample.id}
+                  onChange={(e) => setSelectedExampleId(e.target.value)}
+                  style={{
+                    marginLeft: "8px",
+                    padding: "4px 8px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    fontSize: "14px",
+                  }}
+                >
+                  {examples.map((ex) => (
+                    <option key={ex.id} value={ex.id}>
+                      {ex.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "12px 24px",
+                }}
+              >
+                <label
+                  style={{
+                    fontSize: "14px",
+                    color: "#374151",
+                    fontWeight: 500,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                  }}
+                >
+                  Original HTML file
+                  <input
+                    type="file"
+                    accept=".html,.htm,.txt"
+                    onChange={handleFileChange("original")}
+                    style={{
+                      fontSize: "13px",
+                    }}
+                  />
+                  {fileOriginalName && (
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "#6b7280",
+                      }}
+                    >
+                      Loaded: {fileOriginalName}
+                    </span>
+                  )}
+                </label>
+
+                <label
+                  style={{
+                    fontSize: "14px",
+                    color: "#374151",
+                    fontWeight: 500,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                  }}
+                >
+                  Modified HTML file
+                  <input
+                    type="file"
+                    accept=".html,.htm,.txt"
+                    onChange={handleFileChange("modified")}
+                    style={{
+                      fontSize: "13px",
+                    }}
+                  />
+                  {fileModifiedName && (
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "#6b7280",
+                      }}
+                    >
+                      Loaded: {fileModifiedName}
+                    </span>
+                  )}
+                </label>
+              </div>
+            )}
           </section>
         </header>
 
@@ -319,10 +489,7 @@ const App: React.FC = () => {
                 icon={<DocumentTextIcon width={20} height={20} />}
               />
 
-              <ReviewableDiff
-                original={selectedExample.original}
-                modified={selectedExample.modified}
-              />
+              <ReviewableDiff original={originalHtml} modified={modifiedHtml} />
             </section>
           )}
 
@@ -334,10 +501,7 @@ const App: React.FC = () => {
                 icon={<EyeIcon width={20} height={20} />}
               />
 
-              <WysiwygDiff
-                original={selectedExample.original}
-                modified={selectedExample.modified}
-              />
+              <WysiwygDiff original={originalHtml} modified={modifiedHtml} />
             </section>
           )}
 
@@ -350,8 +514,8 @@ const App: React.FC = () => {
               />
 
               <TextDiff
-                original={selectedExample.original}
-                modified={selectedExample.modified}
+                original={originalHtml}
+                modified={modifiedHtml}
                 mode={mode}
               />
             </section>
@@ -366,8 +530,8 @@ const App: React.FC = () => {
               />
 
               <SideBySideDiff
-                original={selectedExample.original}
-                modified={selectedExample.modified}
+                original={originalHtml}
+                modified={modifiedHtml}
                 mode={mode}
               />
             </section>
