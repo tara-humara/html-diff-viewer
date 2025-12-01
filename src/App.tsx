@@ -19,31 +19,11 @@ import {
 type MainView = "diff" | "review-code" | "review-wysiwyg";
 type DiffView = "unified" | "side-by-side";
 
-// Small pill showing "Step X"
-const StepPill: React.FC<{ step: number }> = ({ step }) => (
-  <span
-    style={{
-      background: "#0b2e4e22",
-      color: "#0b2e4e",
-      fontSize: "11px",
-      fontWeight: 600,
-      padding: "2px 6px",
-      borderRadius: "999px",
-      marginRight: "8px",
-      textTransform: "uppercase",
-      letterSpacing: "0.04em",
-    }}
-  >
-    Step {step}
-  </span>
-);
-
-// Section title with icon + step + text
+// Section title with icon + text (no steps anymore)
 const SectionTitle: React.FC<{
-  step: number;
   title: string;
   icon: React.ReactNode;
-}> = ({ step, title, icon }) => (
+}> = ({ title, icon }) => (
   <div
     style={{
       display: "flex",
@@ -64,7 +44,7 @@ const SectionTitle: React.FC<{
     >
       {icon}
     </div>
-    <StepPill step={step} />
+
     <h2
       style={{
         fontSize: "18px",
@@ -172,7 +152,7 @@ const App: React.FC = () => {
             Compare and validate AI-generated updates before merging them.
           </p>
 
-          {/* Example selector only */}
+          {/* Input selector */}
           <section
             style={{
               display: "flex",
@@ -188,7 +168,7 @@ const App: React.FC = () => {
                 fontWeight: 500,
               }}
             >
-              Example:{" "}
+              Input text:{" "}
               <select
                 value={selectedExample.id}
                 onChange={(e) => setSelectedExampleId(e.target.value)}
@@ -335,7 +315,6 @@ const App: React.FC = () => {
           {mainView === "review-code" && (
             <section style={cardStyle}>
               <SectionTitle
-                step={1}
                 title="Review suggestions (raw HTML)"
                 icon={<DocumentTextIcon width={20} height={20} />}
               />
@@ -351,7 +330,6 @@ const App: React.FC = () => {
           {mainView === "review-wysiwyg" && (
             <section style={cardStyle}>
               <SectionTitle
-                step={2}
                 title="Visual HTML (WYSIWYG)"
                 icon={<EyeIcon width={20} height={20} />}
               />
@@ -367,7 +345,6 @@ const App: React.FC = () => {
           {mainView === "diff" && diffView === "unified" && (
             <section style={cardStyle}>
               <SectionTitle
-                step={3}
                 title="Unified text diff"
                 icon={<AdjustmentsHorizontalIcon width={20} height={20} />}
               />
@@ -384,7 +361,6 @@ const App: React.FC = () => {
           {mainView === "diff" && diffView === "side-by-side" && (
             <section style={cardStyle}>
               <SectionTitle
-                step={4}
                 title="Side-by-side text diff"
                 icon={<Squares2X2Icon width={20} height={20} />}
               />
