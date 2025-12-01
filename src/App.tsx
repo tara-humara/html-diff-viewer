@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { TextDiff } from "./components/TextDiff";
 import type { DiffMode } from "./components/TextDiff";
 import { SideBySideDiff } from "./components/SideBySideDiff";
@@ -18,7 +18,7 @@ import {
 // main menu + sub menu types
 type MainView = "diff" | "review-code" | "review-wysiwyg";
 type DiffView = "unified" | "side-by-side";
-type InputMode = "example" | "files";
+type InputMode = "example" | "files" | "ai";
 
 // Section title with icon + text
 const SectionTitle: React.FC<{
@@ -68,10 +68,20 @@ const App: React.FC = () => {
     examples[0]?.id ?? ""
   );
 
+  // file upload state
   const [fileOriginalName, setFileOriginalName] = useState("");
   const [fileModifiedName, setFileModifiedName] = useState("");
   const [fileOriginalText, setFileOriginalText] = useState("");
   const [fileModifiedText, setFileModifiedText] = useState("");
+
+  // AI draft state
+  const [aiSourceText, setAiSourceText] = useState("");
+  const [aiInstruction, setAiInstruction] = useState(
+    "Describe how the AI should improve the HTML (tone, length, structure, disclaimers, etc.)."
+  );
+  const [aiDraftText, setAiDraftText] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // view state
   const [mainView, setMainView] = useState<MainView>("review-code");
@@ -80,13 +90,22 @@ const App: React.FC = () => {
   const selectedExample =
     examples.find((ex) => ex.id === selectedExampleId) ?? examples[0];
 
+  useEffect(() => window.scrollTo(0, 0), []);
+
   // effective HTML that flows into all tools
   const originalHtml =
-    inputMode === "example" ? selectedExample.original : fileOriginalText;
-  const modifiedHtml =
-    inputMode === "example" ? selectedExample.modified : fileModifiedText;
+    inputMode === "example"
+      ? selectedExample.original
+      : inputMode === "files"
+        ? fileOriginalText
+        : aiSourceText;
 
-  useEffect(() => window.scrollTo(0, 0), []);
+  const modifiedHtml =
+    inputMode === "example"
+      ? selectedExample.modified
+      : inputMode === "files"
+        ? fileModifiedText
+        : aiDraftText || aiSourceText;
 
   // Shared card style
   const cardStyle: React.CSSProperties = {
@@ -154,6 +173,63 @@ const App: React.FC = () => {
         };
         reader.readAsText(file);
       };
+
+  // --- AI source upload (single file) ---
+  const aiFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAiSourceFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    file
+      .text()
+      .then((text) => {
+        setAiSourceText(text);
+      })
+      .catch((err) => {
+        console.error("Failed to read AI source file:", err);
+      })
+      .finally(() => {
+        e.target.value = "";
+      });
+  };
+
+  // call backend OpenAI route
+  const handleGenerateAiDraft = async () => {
+    if (!aiSourceText.trim()) {
+      alert("Please paste or upload some HTML for the AI to modify.");
+      return;
+    }
+
+    setAiGenerating(true);
+    setAiError(null);
+
+    try {
+      const res = await fetch("/api/rewrite-html", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          html: aiSourceText,
+          instruction: aiInstruction,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `Request failed with status ${res.status}`);
+      }
+
+      const data: { modifiedHtml: string } = await res.json();
+      setAiDraftText(data.modifiedHtml);
+    } catch (err: any) {
+      console.error("AI rewrite error:", err);
+      setAiError(err?.message ?? "Unknown error while calling AI");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   return (
     <main
@@ -255,10 +331,30 @@ const App: React.FC = () => {
                 />
                 Upload files
               </label>
+
+              <label
+                style={{
+                  fontSize: "14px",
+                  color: "#374151",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="input-mode"
+                  value="ai"
+                  checked={inputMode === "ai"}
+                  onChange={() => setInputMode("ai")}
+                />
+                AI draft
+              </label>
             </div>
 
-            {/* Example selector OR file inputs */}
-            {inputMode === "example" ? (
+            {/* Example selector / file inputs / AI controls */}
+            {inputMode === "example" && (
               <label
                 style={{
                   fontSize: "14px",
@@ -285,7 +381,9 @@ const App: React.FC = () => {
                   ))}
                 </select>
               </label>
-            ) : (
+            )}
+
+            {inputMode === "files" && (
               <div
                 style={{
                   display: "flex",
@@ -354,6 +452,149 @@ const App: React.FC = () => {
                     </span>
                   )}
                 </label>
+              </div>
+            )}
+
+            {inputMode === "ai" && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr)",
+                  gap: "12px 20px",
+                  alignItems: "flex-start",
+                }}
+              >
+                {/* Left: source HTML */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "14px",
+                        color: "#374151",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Original HTML
+                    </span>
+
+                    <button
+                      type="button"
+                      style={{
+                        fontSize: "12px",
+                        padding: "4px 10px",
+                        borderRadius: "999px",
+                        border: "1px solid #d1d5db",
+                        background: "#f9fafb",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => aiFileInputRef.current?.click()}
+                    >
+                      Upload HTML file…
+                    </button>
+
+                    <input
+                      ref={aiFileInputRef}
+                      type="file"
+                      accept=".html,.htm,.txt"
+                      style={{ display: "none" }}
+                      onChange={handleAiSourceFileUpload}
+                    />
+                  </div>
+
+                  <textarea
+                    value={aiSourceText}
+                    onChange={(e) => setAiSourceText(e.target.value)}
+                    placeholder="Paste the HTML here or use “Upload HTML file…” to load it from disk."
+                    style={{
+                      minHeight: "120px",
+                      padding: "8px",
+                      fontFamily: "monospace",
+                      fontSize: "13px",
+                      borderRadius: "6px",
+                      border: "1px solid #d1d5db",
+                      resize: "vertical",
+                    }}
+                  />
+                </div>
+
+                {/* Right: instruction + generate button */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                  }}
+                >
+                  <label
+                    style={{
+                      fontSize: "14px",
+                      color: "#374151",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Instruction for AI
+                  </label>
+                  <textarea
+                    value={aiInstruction}
+                    onChange={(e) => setAiInstruction(e.target.value)}
+                    placeholder="Describe how the AI should improve the HTML (tone, length, structure, disclaimers, etc.)."
+                    style={{
+                      minHeight: "80px",
+                      padding: "8px",
+                      fontSize: "13px",
+                      borderRadius: "6px",
+                      border: "1px solid #d1d5db",
+                      resize: "vertical",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={aiGenerating || !aiSourceText.trim()}
+                    onClick={handleGenerateAiDraft}
+                    style={{
+                      marginTop: "4px",
+                      alignSelf: "flex-start",
+                      padding: "6px 12px",
+                      borderRadius: "999px",
+                      border: "none",
+                      backgroundColor: aiGenerating ? "#9ca3af" : "#2563eb",
+                      color: "white",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      cursor: aiGenerating ? "default" : "pointer",
+                    }}
+                  >
+                    {aiGenerating ? "Generating draft…" : "Generate AI draft"}
+                  </button>
+                  {aiDraftText && (
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "#16a34a",
+                        marginTop: "2px",
+                      }}
+                    >
+                      Draft generated. Use the views below to review & validate.
+                    </span>
+                  )}
+                  {aiError && (
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "#dc2626",
+                        marginTop: "2px",
+                      }}
+                    >
+                      {aiError}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </section>
