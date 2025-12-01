@@ -159,14 +159,23 @@ const App: React.FC = () => {
 
   return (
     <main className="app-shell">
+      {/* Tiny top nav bar */}
+      <nav className="top-nav">
+        <div className="top-nav-left">
+          <span className="top-nav-logo">◎</span>
+          <span className="top-nav-name">Smart HTML Review Workspace</span>
+        </div>
+        <span className="top-nav-version">v0.1</span>
+      </nav>
+
       <div className="app-inner">
         {/* HEADER */}
         <header className="app-header">
-          <h1 className="app-header-title">Smart HTML Review Workspace</h1>
+          <h1 className="app-header-title">Review HTML changes</h1>
 
           <p className="app-header-subtitle">
-            Review AI-generated edits, compare versions, and produce final
-            validated HTML.
+            Compare originals vs AI drafts, validate suggestions, and export
+            clean final HTML.
           </p>
 
           <section className="input-section">
@@ -409,7 +418,12 @@ const App: React.FC = () => {
                 icon={<DocumentTextIcon width={20} height={20} />}
               />
 
-              <ReviewableDiff original={originalHtml} modified={modifiedHtml} />
+              <div className="diff-block">
+                <ReviewableDiff
+                  original={originalHtml}
+                  modified={modifiedHtml}
+                />
+              </div>
             </section>
           )}
 
@@ -433,11 +447,13 @@ const App: React.FC = () => {
                 icon={<AdjustmentsHorizontalIcon width={20} height={20} />}
               />
 
-              <TextDiff
-                original={originalHtml}
-                modified={modifiedHtml}
-                mode={mode}
-              />
+              <div className="diff-block">
+                <TextDiff
+                  original={originalHtml}
+                  modified={modifiedHtml}
+                  mode={mode}
+                />
+              </div>
             </section>
           )}
 
@@ -449,11 +465,13 @@ const App: React.FC = () => {
                 icon={<Squares2X2Icon width={20} height={20} />}
               />
 
-              <SideBySideDiff
-                original={originalHtml}
-                modified={modifiedHtml}
-                mode={mode}
-              />
+              <div className="diff-block">
+                <SideBySideDiff
+                  original={originalHtml}
+                  modified={modifiedHtml}
+                  mode={mode}
+                />
+              </div>
             </section>
           )}
         </section>
