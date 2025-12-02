@@ -435,7 +435,10 @@ const App: React.FC = () => {
                 icon={<EyeIcon width={20} height={20} />}
               />
 
-              <WysiwygDiff original={originalHtml} modified={modifiedHtml} />
+              <WysiwygDiff
+                original={originalHtml}
+                modified={modifiedHtml}
+              />
             </section>
           )}
 

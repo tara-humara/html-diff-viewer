@@ -143,8 +143,6 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
     const setDecision = (id: string, value: Decision) => {
         setDecisions((prev) => ({ ...prev, [id]: value }));
-        // Any time decisions change, our base merged HTML changes.
-        // If user had custom edited HTML, we keep it (editedHtml stays as-is).
     };
 
     const handleBulk = (mode: "accept" | "reject") => {
@@ -227,7 +225,6 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
     // ----- Render helpers -----
 
-    // Now treats parts.value as HTML and keeps inline formatting.
     const renderInlineParts = (parts: InlinePart[]) =>
         parts.map((p, idx) => {
             if (p.added) {
@@ -256,7 +253,6 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             );
         });
 
-    // Build HTML string for original/modified by dropping added/removed segments.
     const buildHtmlFromParts = (
         parts: InlinePart[],
         mode: "original" | "modified"
@@ -272,10 +268,6 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
     /**
      * Build FINAL merged HTML (for preview) from the diff tree + decisions.
-     * Rules:
-     *  - accepted node: use "modified"
-     *  - rejected or pending: use "original"
-     *  - unchanged: original
      */
     const nodeToFinalHtml = (node: WysiwygNode): string => {
         if (node.type === "root") {
@@ -884,6 +876,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
     };
 
     // ----- Preview panel (click-to-edit) -----
+
     const togglePreviewEditing = () => {
         if (isEditingPreview) {
             // We are finishing editing: capture whatever the user typed
@@ -894,6 +887,24 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         }
         // Toggle edit mode on/off
         setIsEditingPreview((prev) => !prev);
+    };
+
+    // 💾 Download final merged HTML as a file
+    const handleDownloadHtml = () => {
+        const html = mergedPreviewHtml || "";
+        const blob = new Blob([html], {
+            type: "text/html;charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "reviewed.html";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -981,6 +992,14 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                                 onClick={togglePreviewEditing}
                             >
                                 {isEditingPreview ? "Done editing" : "Edit final HTML"}
+                            </button>
+                            <button
+                                className="wysiwyg-btn"
+                                type="button"
+                                onClick={handleDownloadHtml}
+                                disabled={!mergedPreviewHtml.trim()}
+                            >
+                                Download HTML
                             </button>
                         </>
                     )}
@@ -1082,7 +1101,6 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                         }
                         contentEditable={isEditingPreview}
                         suppressContentEditableWarning={true}
-                        // Always show the current merged HTML; we don't touch it on each keystroke
                         dangerouslySetInnerHTML={{ __html: mergedPreviewHtml }}
                     />
                 </div>
