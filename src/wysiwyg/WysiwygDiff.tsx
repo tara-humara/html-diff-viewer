@@ -205,24 +205,38 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
     }, [interactiveIds, activeIndex, panelMode]);
 
     // ----- Render helpers -----
+
+    // Now treats parts.value as HTML and keeps inline formatting.
     const renderInlineParts = (parts: InlinePart[]) =>
         parts.map((p, idx) => {
-            if (p.added)
+            if (p.added) {
                 return (
-                    <span key={idx} className="inline-added">
-                        {p.value}
-                    </span>
+                    <span
+                        key={idx}
+                        className="inline-added"
+                        dangerouslySetInnerHTML={{ __html: p.value }}
+                    />
                 );
-            if (p.removed)
+            }
+            if (p.removed) {
                 return (
-                    <span key={idx} className="inline-removed">
-                        {p.value}
-                    </span>
+                    <span
+                        key={idx}
+                        className="inline-removed"
+                        dangerouslySetInnerHTML={{ __html: p.value }}
+                    />
                 );
-            return <span key={idx}>{p.value}</span>;
+            }
+            return (
+                <span
+                    key={idx}
+                    dangerouslySetInnerHTML={{ __html: p.value }}
+                />
+            );
         });
 
-    const buildTextFromParts = (
+    // Build HTML string for original/modified by dropping added/removed segments.
+    const buildHtmlFromParts = (
         parts: InlinePart[],
         mode: "original" | "modified"
     ) =>
@@ -369,9 +383,9 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             const activeClass = isActive ? " li-active" : "";
             const wrapperClass = `wysiwyg-block-row ${baseClass}${activeClass}`;
 
-            // Non-interactive unchanged block visible as plain text
+            // Non-interactive unchanged block visible as HTML
             if (!isInteractive) {
-                const text = buildTextFromParts(node.inlineParts, "original");
+                const html = buildHtmlFromParts(node.inlineParts, "original");
 
                 return (
                     <div
@@ -385,7 +399,10 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                         >
                             {badgeLabel}
                         </span>
-                        <Tag className="wysiwyg-block-text">{text}</Tag>
+                        <Tag
+                            className="wysiwyg-block-text"
+                            dangerouslySetInnerHTML={{ __html: html }}
+                        />
                     </div>
                 );
             }
@@ -404,10 +421,10 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
             // Resolved interactive block
             if (decision === "accept" || decision === "reject") {
-                const finalText =
+                const html =
                     decision === "accept"
-                        ? buildTextFromParts(node.inlineParts, "modified")
-                        : buildTextFromParts(node.inlineParts, "original");
+                        ? buildHtmlFromParts(node.inlineParts, "modified")
+                        : buildHtmlFromParts(node.inlineParts, "original");
 
                 return (
                     <div
@@ -422,9 +439,10 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                         >
                             {badgeLabel}
                         </span>
-                        <Tag className="wysiwyg-block-text li-resolved-html">
-                            {finalText}
-                        </Tag>
+                        <Tag
+                            className="wysiwyg-block-text li-resolved-html"
+                            dangerouslySetInnerHTML={{ __html: html }}
+                        />
                         <span className="li-actions">
                             <button
                                 type="button"
@@ -502,7 +520,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             );
         }
 
-        // List items (li) — keep existing behaviour
+        // List items (li)
         if (node.type === "li") {
             const isInteractive = interactiveSet.has(node.id);
             const idx = isInteractive ? idToIndex[node.id] ?? 0 : -1;
@@ -512,12 +530,12 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             const WrapperTag: any = "li";
             const ContentTag: any = "span";
 
-            // Non-interactive unchanged li visible as plain text
+            // Non-interactive unchanged li visible as HTML
             if (!isInteractive) {
                 let wrapperClass = `li-${node.status}`;
                 if (isActive) wrapperClass += " li-active";
 
-                const text = buildTextFromParts(node.inlineParts, "original");
+                const html = buildHtmlFromParts(node.inlineParts, "original");
 
                 return (
                     <WrapperTag
@@ -527,7 +545,9 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                         }}
                     >
                         <div className="li-content-row">
-                            <ContentTag>{text}</ContentTag>
+                            <ContentTag
+                                dangerouslySetInnerHTML={{ __html: html }}
+                            />
                         </div>
                     </WrapperTag>
                 );
@@ -547,10 +567,10 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
             // Resolved interactive li
             if (decision === "accept" || decision === "reject") {
-                const finalText =
+                const html =
                     decision === "accept"
-                        ? buildTextFromParts(node.inlineParts, "modified")
-                        : buildTextFromParts(node.inlineParts, "original");
+                        ? buildHtmlFromParts(node.inlineParts, "modified")
+                        : buildHtmlFromParts(node.inlineParts, "original");
 
                 let wrapperClass = "li-resolved";
                 if (isActive) wrapperClass += " li-active";
@@ -564,9 +584,10 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                         onClick={() => setActiveIndex(idx)}
                     >
                         <div className="li-content-row">
-                            <ContentTag className="li-resolved-html">
-                                {finalText}
-                            </ContentTag>
+                            <ContentTag
+                                className="li-resolved-html"
+                                dangerouslySetInnerHTML={{ __html: html }}
+                            />
                             <span className="li-actions">
                                 <button
                                     type="button"

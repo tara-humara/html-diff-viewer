@@ -12,6 +12,9 @@ import type { WysiwygNode, BlockTag } from "./types";
  * as pure containers (we recurse into them). If they don't contain any
  * supported blocks or lists, we fall back to treating their text content
  * as a single paragraph block. This helps with "all-div" HTML.
+ *
+ * IMPORTANT: inlineParts.value now holds HTML (innerHTML), not plain text,
+ * so we can preserve inline formatting like <strong>, <em>, <a>, etc.
  */
 export function parseHtmlToTree(html: string): WysiwygNode | null {
     const parser = new DOMParser();
@@ -38,7 +41,7 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
                     tag: "p",
                     id: "block-0",
                     status: "unchanged",
-                    inlineParts: [{ value: fallbackText }],
+                    inlineParts: [{ value: escapeHtml(fallbackText) }],
                 },
             ],
         };
@@ -61,10 +64,10 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
 
             // Primary block tags: paragraphs + all headings
             if (isBlockTag(tag)) {
-                const text = child.textContent ?? "";
-                const trimmed = text.trim();
-                if (trimmed) {
-                    nodes.push(makeBlockNode(trimmed, tag as BlockTag));
+                // Store innerHTML so we keep <strong>, <em>, <a>, etc.
+                const html = (child.innerHTML ?? "").trim();
+                if (html) {
+                    nodes.push(makeBlockNode(html, tag as BlockTag));
                 }
                 // If needed in the future, you could still recurse inside here.
                 continue;
@@ -87,10 +90,10 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
                     // If the container holds supported content, just use that.
                     nodes.push(...nested);
                 } else {
-                    // Otherwise, fall back to treating the container's text as a block.
-                    const text = (child.textContent ?? "").trim();
-                    if (text) {
-                        nodes.push(makeBlockNode(text, "p"));
+                    // Otherwise, fall back to treating the container's HTML/text as a block.
+                    const html = (child.innerHTML ?? "").trim();
+                    if (html) {
+                        nodes.push(makeBlockNode(html, "p"));
                     }
                 }
                 continue;
@@ -110,9 +113,8 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
         const liElements = el.querySelectorAll(":scope > li");
 
         liElements.forEach((li, index) => {
-            const text = li.textContent ?? "";
-            const trimmed = text.trim();
-            if (!trimmed) {
+            const html = (li.innerHTML ?? "").trim();
+            if (!html) {
                 return;
             }
 
@@ -120,20 +122,22 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
                 type: "li",
                 id: `li-${index}`,
                 status: "unchanged",
-                inlineParts: [{ value: trimmed }],
+                // Store HTML so inline formatting inside the <li> is preserved
+                inlineParts: [{ value: html }],
             });
         });
 
         return { type: listType, children };
     }
 
-    function makeBlockNode(text: string, tag: BlockTag): WysiwygNode {
+    function makeBlockNode(html: string, tag: BlockTag): WysiwygNode {
         return {
             type: "block",
             tag,
             id: `block-${blockIndex++}`,
             status: "unchanged",
-            inlineParts: [{ value: text }],
+            // value is HTML; we render with dangerouslySetInnerHTML
+            inlineParts: [{ value: html }],
         };
     }
 
@@ -151,5 +155,16 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
 
     function isLayoutContainer(tag: string): boolean {
         return tag === "div" || tag === "section" || tag === "article";
+    }
+
+    /**
+     * Simple HTML escape used only for the fallback "body text as a single block"
+     * case, where we had only textContent and want to keep it safe.
+     */
+    function escapeHtml(text: string): string {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
     }
 }
