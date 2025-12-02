@@ -15,6 +15,10 @@
     border-radius: 6px;
     border: 1px solid var(--color-panel-border);
     padding: 12px 16px;
+
+    /* Keep WYSIWYG inside the viewport, scroll locally if needed */
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 /* Typography adjustments */
@@ -123,6 +127,11 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 8px;
+}
+
+/* allow the text column to wrap instead of forcing the row wider than the card */
+.li-content-row>*:first-child {
+    min-width: 0;
 }
 
 .li-actions {
@@ -329,6 +338,12 @@
     /* space so text doesn't go under minimap */
 }
 
+/* optional: if you ever use a pane inner content class */
+.wysiwyg-pane-content {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 /* ------------------------------
    Minimap rail (matches review)
 ------------------------------ */
@@ -498,4 +513,12 @@
 
 .li-hide-btn:hover {
     text-decoration: underline;
+}
+
+/* List items / lines can wrap instead of extending horizontally */
+.wysiwyg-line,
+.wysiwyg-li,
+.wysiwyg-block {
+    white-space: normal;
+    word-break: break-word;
 }

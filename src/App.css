@@ -404,6 +404,8 @@ body {
   border: 1px solid var(--border);
   border-top: 4px solid var(--accent);
   margin-bottom: 24px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Make sure any textarea inside cards (e.g. Final result box) stays inside */
@@ -534,4 +536,17 @@ body {
 
 .diff-table tr:hover td {
   background-color: rgba(148, 163, 184, 0.09);
+}
+
+/* Make sure the app never grows wider than the viewport */
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Any generic pane/card shouldn't create page-wide horizontal scroll */
+.pane {
+  max-width: 100%;
+  box-sizing: border-box;
 }

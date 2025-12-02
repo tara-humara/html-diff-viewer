@@ -164,7 +164,8 @@
 /* small index pill "3/12" */
 .change-inline__index-pill {
     font-size: 10px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        monospace;
     color: #6b7280;
     padding: 1px 6px;
     border-radius: 999px;
@@ -572,7 +573,7 @@
     opacity: 1;
 }
 
-/* Prevent diff bubbles from wrapping onto multiple lines */
+/* Allow diff bubbles to wrap instead of stretching the page */
 .inline-added,
 .inline-removed,
 .diff-span,
@@ -580,27 +581,18 @@
 .change-chunk,
 .change-inline__bubble,
 .change-inline__content {
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
 }
 
-/* Make added/removed inline bubbles compact and aligned */
-.inline-added,
-.inline-removed {
-    display: inline-flex;
-    align-items: center;
-    line-height: 1;
-    padding-top: 0.1rem;
-    padding-bottom: 0.1rem;
-    margin: 0 2px;
-    /* optional: improves spacing */
-}
-
-/* Main fix: keeps replacement bubbles (E → G, Anti etc.) on one line */
+/* Make bubbles wrap nicely inside the line */
+.change-inline,
+.change-inline__bubble,
 .change-inline__content {
+    max-width: 100%;
     display: inline-flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.15rem;
-    white-space: nowrap;
 }
 
 /* Collapsed unchanged sections in ReviewableDiff */
@@ -631,4 +623,24 @@
 .review-collapsed__btn--inline {
     margin-bottom: 4px;
     margin-right: 6px;
+}
+
+/* Keep the whole review area inside the viewport, let it scroll inside if needed */
+.review-shell {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* Each change bubble row should wrap instead of forcing one long line */
+.review-change {
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Container for the list of changes */
+.review-main,
+.review-change-list {
+    max-width: 100%;
+    box-sizing: border-box;
 }
