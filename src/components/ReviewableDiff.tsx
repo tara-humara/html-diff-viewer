@@ -18,10 +18,12 @@ type ChangeInlineProps = {
     onDecision: (value: boolean) => void;
     isActive: boolean;
     onActivate: () => void;
+    index: number; // 0-based index of this change
+    total: number; // total number of changes
 };
 
 const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
-    ({ change, decision, onDecision, isActive, onActivate }, ref) => {
+    ({ change, decision, onDecision, isActive, onActivate, index, total }, ref) => {
         const bubbleKindClass = `change-inline__bubble change-inline__bubble--${change.type}`;
         const containerClass =
             "change-inline" +
@@ -34,9 +36,13 @@ const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
 
         const acceptActive = decision === true;
         const rejectActive = decision === false;
+        const indexLabel = `${index + 1}/${total}`;
 
         return (
             <span ref={ref} className={containerClass} onClick={() => onActivate()}>
+                {/* small index pill like "3/12" */}
+                <span className="change-inline__index-pill">{indexLabel}</span>
+
                 <span className={bubbleKindClass}>
                     {/* visible bubble content */}
                     {change.type !== "add" && change.original && (
@@ -60,6 +66,7 @@ const ChangeInline = React.forwardRef<HTMLSpanElement, ChangeInlineProps>(
                         {change.type === "remove" && `Remove:\n- ${change.original}`}
                     </span>
                 </span>
+
                 <span
                     className="change-inline__actions"
                     onClick={(e) => e.stopPropagation()}
@@ -456,9 +463,7 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                                     }
 
                                     // Small text block: just render as-is
-                                    return (
-                                        <span key={`text-${idx}`}>{text}</span>
-                                    );
+                                    return <span key={`text-${idx}`}>{text}</span>;
                                 }
 
                                 const { change } = block;
@@ -476,6 +481,8 @@ export const ReviewableDiff: React.FC<ReviewableDiffProps> = ({
                                         isActive={activeIndex === changeIdx}
                                         onActivate={() => setActiveIndex(changeIdx)}
                                         onDecision={(v) => handleDecision(change.id, v)}
+                                        index={changeIdx}
+                                        total={changes.length}
                                     />
                                 );
                             })}
