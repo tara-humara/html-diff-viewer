@@ -463,12 +463,23 @@ body {
   display: none;
 }
 
-/* Diff monospace font */
+/* -------------------------------------- */
+/* Diff blocks (GitHub-style polish)      */
+/* -------------------------------------- */
+
 .diff-block {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 14px;
   line-height: 1.55;
   white-space: pre-wrap;
+
+  /* New: make diff area feel like a code block */
+  background: rgba(15, 23, 42, 0.02);
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px;
+  margin-top: 8px;
+  overflow-x: auto;
 }
 
 /* Added lines */
@@ -506,10 +517,21 @@ body {
 /* Side-by-side diff alignment */
 .diff-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
+/* Subtle gridlines + hover row highlight */
 .diff-table td {
   vertical-align: top;
   padding: 4px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.diff-table tr:last-child td {
+  border-bottom: none;
+}
+
+.diff-table tr:hover td {
+  background-color: rgba(148, 163, 184, 0.09);
 }
