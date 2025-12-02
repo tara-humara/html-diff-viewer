@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { diffHtmlTrees } from "./diff";
 import type { WysiwygNode, InlinePart } from "./types";
-import { HtmlSideBySide } from "./HtmlSideBySide";
 import { EmptyState } from "../components/EmptyState";
 import "./styles.css";
 
@@ -34,6 +33,11 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         Record<string, boolean>
     >({});
 
+    // Preview editing state
+    const [isEditingPreview, setIsEditingPreview] = useState(false);
+    const [editedHtml, setEditedHtml] = useState<string | null>(null);
+    const previewRef = useRef<HTMLDivElement | null>(null);
+
     if (!tree) {
         return <div className="wysiwyg-container">No supported HTML.</div>;
     }
@@ -45,6 +49,8 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         setPanelMode("review");
         setExpandedGroups({});
         setExpandedBlockGroups({});
+        setIsEditingPreview(false);
+        setEditedHtml(null);
     }, [original, modified]);
 
     const nodeHasInlineDiff = (node: WysiwygNode): boolean => {
@@ -137,6 +143,8 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
     const setDecision = (id: string, value: Decision) => {
         setDecisions((prev) => ({ ...prev, [id]: value }));
+        // Any time decisions change, our base merged HTML changes.
+        // If user had custom edited HTML, we keep it (editedHtml stays as-is).
     };
 
     const handleBulk = (mode: "accept" | "reject") => {
@@ -153,6 +161,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         setDecisions({});
         setExpandedGroups({});
         setExpandedBlockGroups({});
+        setEditedHtml(null);
     };
 
     const jumpToNextPending = () => {
@@ -262,9 +271,60 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             .join("");
 
     /**
-     * Helper to collapse runs of unchanged, non-interactive block nodes
-     * (p, h1–h6) outside lists.
+     * Build FINAL merged HTML (for preview) from the diff tree + decisions.
+     * Rules:
+     *  - accepted node: use "modified"
+     *  - rejected or pending: use "original"
+     *  - unchanged: original
      */
+    const nodeToFinalHtml = (node: WysiwygNode): string => {
+        if (node.type === "root") {
+            return node.children.map(nodeToFinalHtml).join("");
+        }
+
+        if (node.type === "block") {
+            const decision = decisions[node.id];
+            const mode: "original" | "modified" =
+                decision === "accept" ? "modified" : "original";
+
+            const html = buildHtmlFromParts(node.inlineParts, mode);
+            const tag = node.tag;
+            return `<${tag}>${html}</${tag}>`;
+        }
+
+        if (node.type === "ul" || node.type === "ol") {
+            const tag = node.type;
+            const inner = node.children.map(nodeToFinalHtml).join("");
+            return `<${tag}>${inner}</${tag}>`;
+        }
+
+        if (node.type === "li") {
+            const decision = decisions[node.id];
+            const mode: "original" | "modified" =
+                decision === "accept" ? "modified" : "original";
+
+            const topHtml =
+                node.inlineParts.length > 0
+                    ? buildHtmlFromParts(node.inlineParts, mode)
+                    : "";
+
+            const childrenHtml = node.children
+                ? node.children.map(nodeToFinalHtml).join("")
+                : "";
+
+            return `<li>${topHtml}${childrenHtml}</li>`;
+        }
+
+        return "";
+    };
+
+    const baseFinalHtml = useMemo(() => nodeToFinalHtml(tree), [tree, decisions]);
+
+    // If the user has edited in preview, that wins; otherwise we use merged HTML from decisions.
+    const mergedPreviewHtml = editedHtml ?? baseFinalHtml;
+
+    // ----- Collapsing unchanged blocks outside lists -----
+
     const renderChildrenWithBlockCollapsing = (
         children: WysiwygNode[],
         groupPrefix: string
@@ -823,6 +883,19 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         return null;
     };
 
+    // ----- Preview panel (click-to-edit) -----
+    const togglePreviewEditing = () => {
+        if (isEditingPreview) {
+            // We are finishing editing: capture whatever the user typed
+            if (previewRef.current) {
+                const html = previewRef.current.innerHTML;
+                setEditedHtml(html);
+            }
+        }
+        // Toggle edit mode on/off
+        setIsEditingPreview((prev) => !prev);
+    };
+
     return (
         <div className="wysiwyg-container">
             {/* Toolbar */}
@@ -895,11 +968,27 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                             </button>
                         </>
                     )}
+
+                    {panelMode === "preview" && (
+                        <>
+                            <span className="wysiwyg-actions-divider" />
+                            <button
+                                className={
+                                    "wysiwyg-btn toggle" +
+                                    (isEditingPreview ? " wysiwyg-btn--active" : "")
+                                }
+                                type="button"
+                                onClick={togglePreviewEditing}
+                            >
+                                {isEditingPreview ? "Done editing" : "Edit final HTML"}
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
             {/* Review complete banner */}
-            {stats.pending === 0 && stats.total > 0 && (
+            {panelMode === "review" && stats.pending === 0 && stats.total > 0 && (
                 <div className="wysiwyg-banner wysiwyg-banner--success">
                     <span className="wysiwyg-banner__icon">✔</span>
                     <span>
@@ -919,7 +1008,8 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                                 marginTop: "2px",
                             }}
                         >
-                            Switch to HTML preview to check the final merged document.
+                            Switch to HTML preview to check and edit the final merged
+                            document.
                         </span>
                     </span>
                 </div>
@@ -973,7 +1063,29 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                     </div>
                 )
             ) : (
-                <HtmlSideBySide original={original} modified={modified} />
+                <div className="wysiwyg-preview-shell">
+                    <div className="wysiwyg-preview-toolbar">
+                        <span className="wysiwyg-preview-title">
+                            Final HTML (merged)
+                        </span>
+                        <span className="wysiwyg-preview-hint">
+                            {isEditingPreview
+                                ? "Edit the content directly. Inline formatting is preserved."
+                                : "Click 'Edit final HTML' to adjust the merged result."}
+                        </span>
+                    </div>
+                    <div
+                        ref={previewRef}
+                        className={
+                            "wysiwyg-preview-body" +
+                            (isEditingPreview ? " wysiwyg-preview-body--editing" : "")
+                        }
+                        contentEditable={isEditingPreview}
+                        suppressContentEditableWarning={true}
+                        // Always show the current merged HTML; we don't touch it on each keystroke
+                        dangerouslySetInnerHTML={{ __html: mergedPreviewHtml }}
+                    />
+                </div>
             )}
         </div>
     );
