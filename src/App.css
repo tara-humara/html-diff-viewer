@@ -406,7 +406,7 @@ body {
   margin-bottom: 24px;
 }
 
-/* 🔧 Make sure any textarea inside cards (e.g. Final result box) stays inside */
+/* Make sure any textarea inside cards (e.g. Final result box) stays inside */
 .card textarea {
   width: 100%;
   max-width: 100%;
@@ -473,7 +473,7 @@ body {
   line-height: 1.55;
   white-space: pre-wrap;
 
-  /* New: make diff area feel like a code block */
+  /* Make diff area feel like a code block */
   background: rgba(15, 23, 42, 0.02);
   border-radius: 12px;
   border: 1px solid #e5e7eb;
