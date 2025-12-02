@@ -29,6 +29,11 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         {}
     );
 
+    // Which collapsed groups of unchanged blocks (p, h1–h6) outside lists are expanded
+    const [expandedBlockGroups, setExpandedBlockGroups] = useState<
+        Record<string, boolean>
+    >({});
+
     if (!tree) {
         return <div className="wysiwyg-container">No supported HTML.</div>;
     }
@@ -39,6 +44,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         setActiveIndex(null);
         setPanelMode("review");
         setExpandedGroups({});
+        setExpandedBlockGroups({});
     }, [original, modified]);
 
     const nodeHasInlineDiff = (node: WysiwygNode): boolean => {
@@ -67,8 +73,8 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 node.children.forEach(visit);
             }
 
-            // traverse nested children inside li / block (e.g. nested lists)
-            if ((node.type === "li" || node.type === "block") && "children" in node && node.children) {
+            // traverse nested children inside li (e.g. nested blocks/lists)
+            if (node.type === "li" && node.children) {
                 node.children.forEach(visit);
             }
         };
@@ -146,6 +152,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
     const handleReset = () => {
         setDecisions({});
         setExpandedGroups({});
+        setExpandedBlockGroups({});
     };
 
     const jumpToNextPending = () => {
@@ -254,14 +261,125 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             })
             .join("");
 
+    /**
+     * Helper to collapse runs of unchanged, non-interactive block nodes
+     * (p, h1–h6) outside lists.
+     */
+    const renderChildrenWithBlockCollapsing = (
+        children: WysiwygNode[],
+        groupPrefix: string
+    ): React.ReactNode[] => {
+        const out: React.ReactNode[] = [];
+
+        const isCollapsibleBlock = (n: WysiwygNode | undefined) =>
+            n &&
+            n.type === "block" &&
+            !interactiveSet.has(n.id) &&
+            n.status === "unchanged";
+
+        for (let i = 0; i < children.length;) {
+            const child = children[i];
+
+            if (isCollapsibleBlock(child)) {
+                // collect run of consecutive blocks
+                let j = i;
+                while (j < children.length && isCollapsibleBlock(children[j])) j++;
+
+                const count = j - i;
+
+                if (count === 1) {
+                    // single unchanged block -> render normally
+                    out.push(
+                        <React.Fragment key={`${groupPrefix}-block-${i}`}>
+                            {renderNode(children[i])}
+                        </React.Fragment>
+                    );
+                } else {
+                    const groupId = `${groupPrefix}-blocks-${i}-${j}`;
+                    const expanded = !!expandedBlockGroups[groupId];
+
+                    if (!expanded) {
+                        out.push(
+                            <div key={groupId} className="li-collapsed">
+                                <div className="li-content-row li-content-row--collapsed">
+                                    <span className="li-collapsed__label">
+                                        {count === 1
+                                            ? "1 unchanged block hidden"
+                                            : `${count} unchanged blocks hidden`}
+                                    </span>
+                                    {panelMode === "review" && (
+                                        <button
+                                            type="button"
+                                            className="li-collapsed__btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setExpandedBlockGroups((prev) => ({
+                                                    ...prev,
+                                                    [groupId]: true,
+                                                }));
+                                            }}
+                                        >
+                                            Show
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    } else {
+                        for (let k = i; k < j; k++) {
+                            out.push(
+                                <React.Fragment key={`${groupPrefix}-block-${k}`}>
+                                    {renderNode(children[k])}
+                                </React.Fragment>
+                            );
+                        }
+                        if (panelMode === "review") {
+                            out.push(
+                                <div
+                                    key={`${groupId}-hide`}
+                                    className="li-collapsed"
+                                >
+                                    <div className="li-content-row">
+                                        <button
+                                            type="button"
+                                            className="li-hide-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setExpandedBlockGroups((prev) => ({
+                                                    ...prev,
+                                                    [groupId]: false,
+                                                }));
+                                            }}
+                                        >
+                                            Hide unchanged
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        }
+                    }
+                }
+
+                i = j;
+            } else {
+                out.push(
+                    <React.Fragment key={`${groupPrefix}-child-${i}`}>
+                        {renderNode(child)}
+                    </React.Fragment>
+                );
+                i++;
+            }
+        }
+
+        return out;
+    };
+
     const renderNode = (node: WysiwygNode): React.ReactNode => {
         // Root
         if (node.type === "root") {
             return (
                 <>
-                    {node.children.map((child, i) => (
-                        <React.Fragment key={i}>{renderNode(child)}</React.Fragment>
-                    ))}
+                    {renderChildrenWithBlockCollapsing(node.children, "root")}
                 </>
             );
         }
@@ -559,11 +677,10 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
                         {node.children && node.children.length > 0 && (
                             <div className="li-children">
-                                {node.children.map((child, idx2) => (
-                                    <React.Fragment key={idx2}>
-                                        {renderNode(child)}
-                                    </React.Fragment>
-                                ))}
+                                {renderChildrenWithBlockCollapsing(
+                                    node.children,
+                                    `li-${node.id}`
+                                )}
                             </div>
                         )}
                     </WrapperTag>
@@ -637,11 +754,10 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
                         {node.children && node.children.length > 0 && (
                             <div className="li-children">
-                                {node.children.map((child, idx2) => (
-                                    <React.Fragment key={idx2}>
-                                        {renderNode(child)}
-                                    </React.Fragment>
-                                ))}
+                                {renderChildrenWithBlockCollapsing(
+                                    node.children,
+                                    `li-${node.id}`
+                                )}
                             </div>
                         )}
                     </WrapperTag>
@@ -694,11 +810,10 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
 
                     {node.children && node.children.length > 0 && (
                         <div className="li-children">
-                            {node.children.map((child, idx2) => (
-                                <React.Fragment key={idx2}>
-                                    {renderNode(child)}
-                                </React.Fragment>
-                            ))}
+                            {renderChildrenWithBlockCollapsing(
+                                node.children,
+                                `li-${node.id}`
+                            )}
                         </div>
                     )}
                 </WrapperTag>
