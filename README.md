@@ -1,166 +1,152 @@
-# HTML Text Diff Viewer (Updated)
+# HTML Text Diff Viewer
 
-A complete workspace for comparing, reviewing, and validating HTML edits — including **AI‑generated modifications**.
+A complete workspace for comparing, reviewing, and validating HTML edits
+--- including **AI‑generated modifications**.
 
 ## ✨ Features
 
-- **Upload HTML files** or pick from built‑in examples  
-- **Ask AI to rewrite HTML** using custom instructions  
-- **Compare original vs modified** using:
-  - Unified diff
-  - Side‑by‑side diff
-  - WYSIWYG HTML structural diff
-- **Human‑in‑the‑loop review workflow**
-  - Accept/reject individual changes
-  - Final merged HTML view
-- **DOM‑aware diff engine** for real structural comparison
+-   **Upload HTML files** or pick from built‑in examples\
+-   **Ask AI to rewrite HTML** using custom instructions\
+-   **Compare original vs modified** using:
+    -   Unified diff
+    -   Side‑by‑side diff
+    -   WYSIWYG HTML structural diff
+-   **Human‑in‑the‑loop review workflow**
+    -   Accept/reject individual changes
+    -   Collapsed unchanged blocks inside and outside lists
+    -   Final merged HTML view
+    -   **Editable HTML preview**
+    -   **Download final merged HTML**
+-   **DOM‑aware diff engine** for real structural comparison
 
----
+------------------------------------------------------------------------
 
 ## 🛠️ Tech Stack
 
-- React + TypeScript  
-- Vite  
-- diff library for textual diffs  
-- Custom HTML parser + AST for WYSIWYG diff  
-- Node.js backend (AI rewrite)  
-- OpenAI API  
+-   React + TypeScript\
+-   Vite\
+-   Node.js backend (AI rewrite)\
+-   OpenAI API\
+-   Custom HTML parser + AST for WYSIWYG diff
 
----
+------------------------------------------------------------------------
 
 ## 🚀 Getting Started
 
 ### 1. Install dependencies
 
-```bash
+``` bash
 npm install
 ```
 
 ### 2. Start the frontend
 
-```bash
+``` bash
 npm run dev
 ```
 
-App runs on:  
+Runs at:\
 ➡️ http://localhost:5173
 
-### 3. Setup backend for AI rewrite
+### 3. Backend for AI rewrite
 
 Create `.env`:
 
-```
-OPENAI_API_KEY=your_openai_key_here
-```
+    OPENAI_API_KEY=your_openai_key_here
 
 Start backend:
 
-```bash
+``` bash
 node server.js
 ```
 
----
+------------------------------------------------------------------------
 
 ## 📁 Project Structure
 
-```
-src/
-  components/
-    TextDiff.tsx
-    SideBySideDiff.tsx
-    ReviewableDiff.tsx
-  wysiwyg/
-    parse.ts
-    diff.ts
-    WysiwygDiff.tsx
-  styles/
-    diff.css
-    review.css
-  App.tsx
-  examples.ts
-server.js
-```
+    src/
+      components/
+        TextDiff.tsx
+        SideBySideDiff.tsx
+        ReviewableDiff.tsx
+      wysiwyg/
+        parse.ts
+        diff.ts
+        WysiwygDiff.tsx
+        styles.css
+      styles/
+        diff.css
+        review.css
+      App.tsx
+      examples.ts
+    server.js
 
----
+------------------------------------------------------------------------
 
-# 🔍 Levels of Functionality
+## 🔍 Levels of Functionality
 
-## 1. Text Diff — Unified + Side‑by‑Side
+### 1. Text Diff --- Unified + Side‑by‑Side
 
-- Character, word, or line diff  
-- Highlight added/removed blocks  
-- Collapsible unchanged ranges  
-- GitHub-style visuals  
+-   Character, word, and line diff\
+-   GitHub‑style visuals\
+-   Collapsible unchanged regions
 
----
+------------------------------------------------------------------------
 
-## 2. Review Mode — Accept/Reject
+### 2. Review Mode --- Accept/Reject
 
-- Inline change bubbles  
-- Accept all / Reject all  
-- Track accepted/rejected/pending  
-- Final merged HTML always visible  
+-   Inline change bubbles\
+-   Accept all / Reject all\
+-   Tracks accepted, rejected, pending\
+-   Final merged HTML view
 
-Uses internal block model:
+------------------------------------------------------------------------
 
-```ts
-type ChangeType = "add" | "remove" | "replace";
-```
+### 3. WYSIWYG HTML Structural Diff
 
----
+-   HTML → AST parsing\
+-   Supports:
+    -   `<p>`, `<h1>`--`<h6>`, lists, nested lists
+    -   Collapsed unchanged blocks
+    -   Inline formatting preservation (`<b>`, `<i>`, `<a>`, `<span>`,
+        ...)
+-   Click‑to‑edit final merged HTML\
+-   Download final merged HTML
 
-## 3. WYSIWYG HTML Diff (Structural)
+------------------------------------------------------------------------
 
-The most advanced part of the project.
+## 🤖 AI Rewrite Mode
 
-- Converts HTML to a simplified AST  
-- Diffs blocks (`<p>`, `<h2>`, `<ul>`, `<li>`)  
-- Inline word-level diff inside block nodes  
-- Accept/reject buttons on each block  
-- Collapsed unchanged nodes  
+Steps:
 
-Not text diff — **real HTML tree diff**.
+1.  Paste or upload HTML\
+2.  Provide instructions\
+3.  Generate AI draft\
+4.  Review changes visually\
+5.  Export final HTML
 
----
+Endpoint:
 
-## 🤖 AI Rewrite Mode (New)
-
-Input options include:
-
-- Example snippets  
-- File uploads  
-- **AI draft generator**
-
-You can:
-
-1. Paste HTML  
-2. Enter instructions (e.g., "Make tone more formal", "Add safety disclaimer")  
-3. Generate an AI-modified draft  
-4. Review changes using diff tools  
-
-Backend endpoint:
-
-```
-POST /api/rewrite-html
-```
+    POST /api/rewrite-html
 
 Returns:
 
-```json
-{ "modifiedHtml": "<p>Updated text...</p>" }
+``` json
+{ "modifiedHtml": "<p>Updated content…</p>" }
 ```
 
----
+------------------------------------------------------------------------
 
 ## 📌 Planned Enhancements
 
-- Persist review state  
-- Highlight HTML tag-level changes  
-- Add table + div diff support  
-- Side-by-side WYSIWYG  
-- Multi-user collab  
+-   Persistent review state\
+-   Additional HTML element support\
+-   Table + div diff\
+-   Side‑by‑side WYSIWYG\
+-   Multi‑user collaboration
 
----
+------------------------------------------------------------------------
 
 ## 📄 License
+
 MIT
