@@ -1,5 +1,3 @@
-// src/wysiwyg/types.ts
-
 export type InlinePart = {
     value: string;
     added?: boolean;
@@ -8,7 +6,21 @@ export type InlinePart = {
 
 export type LiStatus = "unchanged" | "added" | "removed" | "changed";
 
-export type BlockTag = "p" | "h2";
+/**
+ * Block-level tags that we explicitly represent in the WYSIWYG tree.
+ *
+ * We support paragraphs and all headings out of the box.
+ * Layout containers like <div>, <section>, <article> are treated as
+ * containers in parseHtmlToTree and only turned into blocks as a fallback.
+ */
+export type BlockTag =
+    | "p"
+    | "h1"
+    | "h2"
+    | "h3"
+    | "h4"
+    | "h5"
+    | "h6";
 
 export type WysiwygNode =
     | {

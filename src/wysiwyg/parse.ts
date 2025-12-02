@@ -5,11 +5,13 @@ import type { WysiwygNode, BlockTag } from "./types";
  * Parse an HTML string into a simplified tree used by the WYSIWYG diff.
  *
  * We recursively traverse the DOM and collect "interesting" nodes in document order:
- * - <p>, <h2> → block nodes
- * - <ul>, <ol> → list nodes with <li> children
+ * - <p>, <h1>–<h6>        → block nodes
+ * - <ul>, <ol>            → list nodes with <li> children
  *
- * Container elements like <div>, <section> are *not* represented explicitly
- * in the tree yet; we simply recurse into them and flatten the relevant blocks.
+ * Layout containers like <div>, <section>, <article> are usually treated
+ * as pure containers (we recurse into them). If they don't contain any
+ * supported blocks or lists, we fall back to treating their text content
+ * as a single paragraph block. This helps with "all-div" HTML.
  */
 export function parseHtmlToTree(html: string): WysiwygNode | null {
     const parser = new DOMParser();
@@ -20,40 +22,82 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
 
     const children = collectNodes(body);
 
-    if (children.length === 0) return null;
+    // If we didn't find any explicit blocks/lists, but there is text content,
+    // fall back to a single paragraph block representing the whole body.
+    if (children.length === 0) {
+        const fallbackText = (body.textContent ?? "").trim();
+        if (!fallbackText) {
+            return null;
+        }
+
+        return {
+            type: "root",
+            children: [
+                {
+                    type: "block",
+                    tag: "p",
+                    id: "block-0",
+                    status: "unchanged",
+                    inlineParts: [{ value: fallbackText }],
+                },
+            ],
+        };
+    }
 
     return {
         type: "root",
         children,
     };
 
+    /**
+     * Collect WysiwygNodes from an element's children in document order.
+     */
     function collectNodes(el: HTMLElement): WysiwygNode[] {
         const nodes: WysiwygNode[] = [];
-
         const elementChildren = Array.from(el.children) as HTMLElement[];
 
         for (const child of elementChildren) {
             const tag = child.tagName.toLowerCase();
 
-            if (tag === "p" || tag === "h2") {
-                const blockTag = tag as BlockTag;
+            // Primary block tags: paragraphs + all headings
+            if (isBlockTag(tag)) {
                 const text = child.textContent ?? "";
-                nodes.push({
-                    type: "block",
-                    tag: blockTag,
-                    id: `block-${blockIndex++}`,
-                    status: "unchanged",
-                    inlineParts: [{ value: text }],
-                });
-                // continue recursion INSIDE paragraphs/headings if needed later
-            } else if (tag === "ul" || tag === "ol") {
+                const trimmed = text.trim();
+                if (trimmed) {
+                    nodes.push(makeBlockNode(trimmed, tag as BlockTag));
+                }
+                // If needed in the future, you could still recurse inside here.
+                continue;
+            }
+
+            // Lists: <ul>, <ol>
+            if (tag === "ul" || tag === "ol") {
                 if (child instanceof HTMLUListElement || child instanceof HTMLOListElement) {
                     nodes.push(parseListNode(child));
                 }
-            } else {
-                // container or unknown tag: recurse into its children
-                nodes.push(...collectNodes(child));
+                continue;
             }
+
+            // Layout containers: <div>, <section>, <article>
+            if (isLayoutContainer(tag)) {
+                // First, try to collect any nested blocks/lists.
+                const nested = collectNodes(child);
+
+                if (nested.length > 0) {
+                    // If the container holds supported content, just use that.
+                    nodes.push(...nested);
+                } else {
+                    // Otherwise, fall back to treating the container's text as a block.
+                    const text = (child.textContent ?? "").trim();
+                    if (text) {
+                        nodes.push(makeBlockNode(text, "p"));
+                    }
+                }
+                continue;
+            }
+
+            // Other/unknown tags: just recurse into their children.
+            nodes.push(...collectNodes(child));
         }
 
         return nodes;
@@ -67,14 +111,45 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
 
         liElements.forEach((li, index) => {
             const text = li.textContent ?? "";
+            const trimmed = text.trim();
+            if (!trimmed) {
+                return;
+            }
+
             children.push({
                 type: "li",
                 id: `li-${index}`,
                 status: "unchanged",
-                inlineParts: [{ value: text }],
+                inlineParts: [{ value: trimmed }],
             });
         });
 
         return { type: listType, children };
+    }
+
+    function makeBlockNode(text: string, tag: BlockTag): WysiwygNode {
+        return {
+            type: "block",
+            tag,
+            id: `block-${blockIndex++}`,
+            status: "unchanged",
+            inlineParts: [{ value: text }],
+        };
+    }
+
+    function isBlockTag(tag: string): tag is BlockTag {
+        return (
+            tag === "p" ||
+            tag === "h1" ||
+            tag === "h2" ||
+            tag === "h3" ||
+            tag === "h4" ||
+            tag === "h5" ||
+            tag === "h6"
+        );
+    }
+
+    function isLayoutContainer(tag: string): boolean {
+        return tag === "div" || tag === "section" || tag === "article";
     }
 }

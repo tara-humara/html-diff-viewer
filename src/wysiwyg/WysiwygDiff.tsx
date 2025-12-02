@@ -33,7 +33,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         return <div className="wysiwyg-container">No supported HTML.</div>;
     }
 
-    // Reset when example changes
+    // Reset when example / inputs change
     useEffect(() => {
         setDecisions({});
         setActiveIndex(null);
@@ -46,7 +46,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
         return node.inlineParts.some((p) => p.added || p.removed);
     };
 
-    // Interactive = changed nodes (used for stats / minimap / actions)
+    // Interactive = nodes with any change (status != unchanged or inline diffs)
     const interactiveIds = useMemo(() => {
         const ids: string[] = [];
 
@@ -355,17 +355,164 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             return <Tag>{out}</Tag>;
         }
 
-        // Blocks & list items
-        if (node.type === "li" || node.type === "block") {
+        // Block nodes (p, h1–h6) with heading-aware rendering + badge
+        if (node.type === "block") {
             const isInteractive = interactiveSet.has(node.id);
             const idx = isInteractive ? idToIndex[node.id] ?? 0 : -1;
             const isActive = isInteractive && activeIndex === idx;
             const decision = isInteractive ? decisions[node.id] : undefined;
 
-            const WrapperTag: any = node.type === "block" ? "div" : "li";
-            const ContentTag: any = node.type === "block" ? node.tag : "span";
+            const Tag = node.tag as keyof React.JSX.IntrinsicElements;
+            const badgeLabel = node.tag === "p" ? "P" : node.tag.toUpperCase();
+
+            const baseClass = `li-${node.status}`;
+            const activeClass = isActive ? " li-active" : "";
+            const wrapperClass = `wysiwyg-block-row ${baseClass}${activeClass}`;
 
             // Non-interactive unchanged block visible as plain text
+            if (!isInteractive) {
+                const text = buildTextFromParts(node.inlineParts, "original");
+
+                return (
+                    <div
+                        className={wrapperClass}
+                        ref={(el: HTMLElement | null) => {
+                            nodeRefs.current[node.id] = el;
+                        }}
+                    >
+                        <span
+                            className={`wysiwyg-block-badge wysiwyg-block-badge--${node.tag}`}
+                        >
+                            {badgeLabel}
+                        </span>
+                        <Tag className="wysiwyg-block-text">{text}</Tag>
+                    </div>
+                );
+            }
+
+            const onAcceptClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                const newDecision = decision === "accept" ? undefined : "accept";
+                setDecision(node.id, newDecision);
+            };
+
+            const onRejectClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                const newDecision = decision === "reject" ? undefined : "reject";
+                setDecision(node.id, newDecision);
+            };
+
+            // Resolved interactive block
+            if (decision === "accept" || decision === "reject") {
+                const finalText =
+                    decision === "accept"
+                        ? buildTextFromParts(node.inlineParts, "modified")
+                        : buildTextFromParts(node.inlineParts, "original");
+
+                return (
+                    <div
+                        className={wrapperClass}
+                        ref={(el: HTMLElement | null) => {
+                            nodeRefs.current[node.id] = el;
+                        }}
+                        onClick={() => setActiveIndex(idx)}
+                    >
+                        <span
+                            className={`wysiwyg-block-badge wysiwyg-block-badge--${node.tag}`}
+                        >
+                            {badgeLabel}
+                        </span>
+                        <Tag className="wysiwyg-block-text li-resolved-html">
+                            {finalText}
+                        </Tag>
+                        <span className="li-actions">
+                            <button
+                                type="button"
+                                className={
+                                    "li-btn li-btn-accept" +
+                                    (decision === "accept" ? " li-btn-active" : "")
+                                }
+                                onClick={onAcceptClick}
+                                aria-label="Accept change"
+                                title="Accept change"
+                            >
+                                <span className="li-btn__icon">✓</span>
+                            </button>
+                            <button
+                                type="button"
+                                className={
+                                    "li-btn li-btn-reject" +
+                                    (decision === "reject" ? " li-btn-active" : "")
+                                }
+                                onClick={onRejectClick}
+                                aria-label="Reject change"
+                                title="Reject change"
+                            >
+                                <span className="li-btn__icon">✕</span>
+                            </button>
+                        </span>
+                    </div>
+                );
+            }
+
+            // Pending interactive block
+            return (
+                <div
+                    className={wrapperClass}
+                    ref={(el: HTMLElement | null) => {
+                        nodeRefs.current[node.id] = el;
+                    }}
+                    onClick={() => setActiveIndex(idx)}
+                >
+                    <span
+                        className={`wysiwyg-block-badge wysiwyg-block-badge--${node.tag}`}
+                    >
+                        {badgeLabel}
+                    </span>
+                    <Tag className="wysiwyg-block-text">
+                        {renderInlineParts(node.inlineParts)}
+                    </Tag>
+                    <span className="li-actions">
+                        <button
+                            type="button"
+                            className={
+                                "li-btn li-btn-accept" +
+                                (decision === "accept" ? " li-btn-active" : "")
+                            }
+                            onClick={onAcceptClick}
+                            aria-label="Accept change"
+                            title="Accept change"
+                        >
+                            <span className="li-btn__icon">✓</span>
+                        </button>
+                        <button
+                            type="button"
+                            className={
+                                "li-btn li-btn-reject" +
+                                (decision === "reject" ? " li-btn-active" : "")
+                            }
+                            onClick={onRejectClick}
+                            aria-label="Reject change"
+                            title="Reject change"
+                        >
+                            <span className="li-btn__icon">✕</span>
+                        </button>
+                    </span>
+                </div>
+            );
+        }
+
+        // List items (li) — keep existing behaviour
+        if (node.type === "li") {
+            const isInteractive = interactiveSet.has(node.id);
+            const idx = isInteractive ? idToIndex[node.id] ?? 0 : -1;
+            const isActive = isInteractive && activeIndex === idx;
+            const decision = isInteractive ? decisions[node.id] : undefined;
+
+            const WrapperTag: any = "li";
+            const ContentTag: any = "span";
+
+            // Non-interactive unchanged li visible as plain text
             if (!isInteractive) {
                 let wrapperClass = `li-${node.status}`;
                 if (isActive) wrapperClass += " li-active";
@@ -398,7 +545,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 setDecision(node.id, newDecision);
             };
 
-            // Resolved interactive block
+            // Resolved interactive li
             if (decision === "accept" || decision === "reject") {
                 const finalText =
                     decision === "accept"
@@ -417,7 +564,9 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                         onClick={() => setActiveIndex(idx)}
                     >
                         <div className="li-content-row">
-                            <ContentTag className="li-resolved-html">{finalText}</ContentTag>
+                            <ContentTag className="li-resolved-html">
+                                {finalText}
+                            </ContentTag>
                             <span className="li-actions">
                                 <button
                                     type="button"
@@ -449,7 +598,7 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                 );
             }
 
-            // Pending interactive block
+            // Pending interactive li
             let itemClass = `li-${node.status}`;
             if (isActive) itemClass += " li-active";
 
