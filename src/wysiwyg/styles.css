@@ -588,3 +588,9 @@
     white-space: normal;
     word-break: break-word;
 }
+
+/* nested content inside a list item (e.g. nested <ul>/<ol>) */
+.li-children {
+    margin-top: 4px;
+    margin-left: 1.25rem;
+}

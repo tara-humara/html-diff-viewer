@@ -8,10 +8,6 @@ export type LiStatus = "unchanged" | "added" | "removed" | "changed";
 
 /**
  * Block-level tags that we explicitly represent in the WYSIWYG tree.
- *
- * We support paragraphs and all headings out of the box.
- * Layout containers like <div>, <section>, <article> are treated as
- * containers in parseHtmlToTree and only turned into blocks as a fallback.
  */
 export type BlockTag =
     | "p"
@@ -36,6 +32,10 @@ export type WysiwygNode =
         id: string;
         status: LiStatus;
         inlineParts: InlinePart[];
+        /**
+         * Optional nested content inside this <li>, e.g. nested <ul>/<ol> or blocks.
+         */
+        children?: WysiwygNode[];
     }
     | {
         type: "block";

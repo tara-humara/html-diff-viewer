@@ -66,6 +66,11 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
             ) {
                 node.children.forEach(visit);
             }
+
+            // traverse nested children inside li / block (e.g. nested lists)
+            if ((node.type === "li" || node.type === "block") && "children" in node && node.children) {
+                node.children.forEach(visit);
+            }
         };
 
         visit(tree);
@@ -545,10 +550,22 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                         }}
                     >
                         <div className="li-content-row">
-                            <ContentTag
-                                dangerouslySetInnerHTML={{ __html: html }}
-                            />
+                            {node.inlineParts.length > 0 && (
+                                <ContentTag
+                                    dangerouslySetInnerHTML={{ __html: html }}
+                                />
+                            )}
                         </div>
+
+                        {node.children && node.children.length > 0 && (
+                            <div className="li-children">
+                                {node.children.map((child, idx2) => (
+                                    <React.Fragment key={idx2}>
+                                        {renderNode(child)}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        )}
                     </WrapperTag>
                 );
             }
@@ -584,10 +601,12 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                         onClick={() => setActiveIndex(idx)}
                     >
                         <div className="li-content-row">
-                            <ContentTag
-                                className="li-resolved-html"
-                                dangerouslySetInnerHTML={{ __html: html }}
-                            />
+                            {node.inlineParts.length > 0 && (
+                                <ContentTag
+                                    className="li-resolved-html"
+                                    dangerouslySetInnerHTML={{ __html: html }}
+                                />
+                            )}
                             <span className="li-actions">
                                 <button
                                     type="button"
@@ -615,6 +634,16 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                                 </button>
                             </span>
                         </div>
+
+                        {node.children && node.children.length > 0 && (
+                            <div className="li-children">
+                                {node.children.map((child, idx2) => (
+                                    <React.Fragment key={idx2}>
+                                        {renderNode(child)}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        )}
                     </WrapperTag>
                 );
             }
@@ -632,7 +661,9 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                     onClick={() => setActiveIndex(idx)}
                 >
                     <div className="li-content-row">
-                        <ContentTag>{renderInlineParts(node.inlineParts)}</ContentTag>
+                        {node.inlineParts.length > 0 && (
+                            <ContentTag>{renderInlineParts(node.inlineParts)}</ContentTag>
+                        )}
                         <span className="li-actions">
                             <button
                                 type="button"
@@ -660,6 +691,16 @@ export const WysiwygDiff: React.FC<WysiwygDiffProps> = ({
                             </button>
                         </span>
                     </div>
+
+                    {node.children && node.children.length > 0 && (
+                        <div className="li-children">
+                            {node.children.map((child, idx2) => (
+                                <React.Fragment key={idx2}>
+                                    {renderNode(child)}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    )}
                 </WrapperTag>
             );
         }

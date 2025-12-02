@@ -13,7 +13,7 @@ import type { WysiwygNode, BlockTag } from "./types";
  * supported blocks or lists, we fall back to treating their text content
  * as a single paragraph block. This helps with "all-div" HTML.
  *
- * IMPORTANT: inlineParts.value now holds HTML (innerHTML), not plain text,
+ * IMPORTANT: inlineParts.value holds HTML (innerHTML), not plain text,
  * so we can preserve inline formatting like <strong>, <em>, <a>, etc.
  */
 export function parseHtmlToTree(html: string): WysiwygNode | null {
@@ -69,7 +69,6 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
                 if (html) {
                     nodes.push(makeBlockNode(html, tag as BlockTag));
                 }
-                // If needed in the future, you could still recurse inside here.
                 continue;
             }
 
@@ -106,6 +105,12 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
         return nodes;
     }
 
+    /**
+     * Parse a <ul> or <ol> into a list node with li children.
+     * Each <li> gets:
+     *   - inlineParts: top-level HTML in the <li> (excluding nested <ul>/<ol>)
+     *   - children: nested blocks/lists inside the <li> (if any)
+     */
     function parseListNode(el: HTMLUListElement | HTMLOListElement): WysiwygNode {
         const listType = el.tagName.toLowerCase() as "ul" | "ol";
 
@@ -113,8 +118,20 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
         const liElements = el.querySelectorAll(":scope > li");
 
         liElements.forEach((li, index) => {
-            const html = (li.innerHTML ?? "").trim();
-            if (!html) {
+            const liElement = li as HTMLElement;
+
+            // Clone the <li> and remove nested lists from the clone
+            // to get only the "top" content as inline HTML.
+            const clone = liElement.cloneNode(true) as HTMLElement;
+            clone.querySelectorAll("ul,ol").forEach((nested) => nested.remove());
+            const topHtml = (clone.innerHTML ?? "").trim();
+
+            // Now parse nested blocks/lists inside the original <li>
+            const nestedChildren = collectNodes(liElement);
+
+            // If there's no top content but there are nested nodes, we still
+            // create a li node with empty inlineParts and children.
+            if (!topHtml && nestedChildren.length === 0) {
                 return;
             }
 
@@ -122,8 +139,8 @@ export function parseHtmlToTree(html: string): WysiwygNode | null {
                 type: "li",
                 id: `li-${index}`,
                 status: "unchanged",
-                // Store HTML so inline formatting inside the <li> is preserved
-                inlineParts: [{ value: html }],
+                inlineParts: topHtml ? [{ value: topHtml }] : [],
+                children: nestedChildren.length > 0 ? nestedChildren : undefined,
             });
         });
 
